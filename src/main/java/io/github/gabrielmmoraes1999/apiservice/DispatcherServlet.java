@@ -1,0 +1,220 @@
+package io.github.gabrielmmoraes1999.apiservice;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import io.github.gabrielmmoraes1999.apiservice.annotation.*;
+import io.github.gabrielmmoraes1999.apiservice.context.DependencyInjector;
+import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
+import io.github.gabrielmmoraes1999.apiservice.http.ResponseEntity;
+import io.github.gabrielmmoraes1999.apiservice.serializer.*;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.*;
+import java.util.regex.Matcher;
+
+public class DispatcherServlet extends HttpServlet {
+
+    private final static Map<String, Set<String>> registeredPaths = new HashMap<>();
+    private final Map<String, List<RouteInfo>> routes = new HashMap<>();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Override
+    public void init() throws ServletException {
+        try {
+            ConfigSerializer.init();
+            ApplicationContext.init();
+
+            SimpleModule simpleModule = new SimpleModule();
+            simpleModule.addSerializer(java.sql.Date.class, new DateSqlSerializer());
+            simpleModule.addSerializer(java.time.LocalDateTime.class, new LocalDateTimeSerializer());
+            simpleModule.addSerializer(java.sql.Timestamp.class, new TimestampSerializer());
+
+            simpleModule.addDeserializer(java.sql.Date.class, new DateSqlDeserializer());
+            simpleModule.addDeserializer(java.time.LocalDateTime.class, new LocalDateTimeDeserializer());
+            simpleModule.addDeserializer(java.sql.Timestamp.class, new TimestampDeserializer());
+            objectMapper.registerModule(simpleModule);
+
+            for (Class<?> controller : Functions.getReflections().getTypesAnnotatedWith(RestController.class)) {
+                RestController restController = controller.getAnnotation(RestController.class);
+                Object controllerInstance = controller.getConstructor().newInstance();
+                DependencyInjector.injectAutowiredDependencies(controllerInstance);
+
+                String basePath = restController.value();
+                if (!basePath.startsWith("/")) basePath = "/" + basePath;
+                if (basePath.endsWith("/")) basePath = basePath.substring(0, basePath.length() - 1);
+
+                for (Method method : controller.getDeclaredMethods()) {
+                    String httpMethod = null;
+                    String routePath = null;
+
+                    if (method.isAnnotationPresent(GetMapping.class)) {
+                        httpMethod = "GET";
+                        routePath = Objects.requireNonNull(method.getAnnotation(GetMapping.class)).value();
+                    } else if (method.isAnnotationPresent(PostMapping.class)) {
+                        httpMethod = "POST";
+                        routePath = Objects.requireNonNull(method.getAnnotation(PostMapping.class)).value();
+                    } else if (method.isAnnotationPresent(PutMapping.class)) {
+                        httpMethod = "PUT";
+                        routePath = Objects.requireNonNull(method.getAnnotation(PutMapping.class)).value();
+                    } else if (method.isAnnotationPresent(DeleteMapping.class)) {
+                        httpMethod = "DELETE";
+                        routePath = Objects.requireNonNull(method.getAnnotation(DeleteMapping.class)).value();
+                    }
+
+                    if (httpMethod != null && routePath != null) {
+                        String fullPath = basePath + (routePath.startsWith("/") ? routePath : "/" + routePath);
+                        RouteInfo routeInfo = RouteInfo.createRouteInfo(method, controllerInstance, fullPath);
+
+                        registeredPaths.putIfAbsent(httpMethod, new HashSet<>());
+                        Set<String> paths = registeredPaths.get(httpMethod);
+
+                        if (paths.contains(fullPath)) {
+                            throw new ServletException("Duplicate Route: [" + httpMethod + " " + fullPath + "]");
+                        }
+                        paths.add(fullPath);
+
+                        routes.computeIfAbsent(httpMethod, k -> new ArrayList<>()).add(routeInfo);
+                    }
+                }
+            }
+        } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    @Override
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String httpMethod = req.getMethod();
+        String path = req.getPathInfo();
+        PrintWriter printWriter = resp.getWriter();
+
+        if (path == null) path = "/";
+
+        List<RouteInfo> routeInfos = routes.get(httpMethod);
+        if (routeInfos == null) {
+            resp.setStatus(405);
+            printWriter.write("{\"error\":\"Método HTTP não suportado\"}");
+            return;
+        }
+
+        for (RouteInfo routeInfo : routeInfos) {
+            Matcher matcher = routeInfo.getPathPattern().matcher(path);
+            if (matcher.matches()) {
+                try {
+                    Map<String, String> pathVariables = new HashMap<>();
+                    List<String> pathVariableNames = routeInfo.getPathVariableNames();
+
+                    for (int i = 0; i < pathVariableNames.size(); i++) {
+                        pathVariables.put(pathVariableNames.get(i), matcher.group(i + 1));
+                    }
+
+                    Object result = invokeMethod(routeInfo.getMethod(), routeInfo.getControllerInstance(), req, resp, pathVariables);
+                    resp.setContentType("application/json");
+
+                    if (result != null) {
+                        if (result instanceof ResponseEntity) {
+                            ResponseEntity<?> entity = (ResponseEntity<?>) result;
+                            resp.setStatus(entity.getStatus().value());
+
+                            for (Map.Entry<String, String> header : entity.getHeaders().entrySet()) {
+                                resp.setHeader(header.getKey(), header.getValue());
+                            }
+
+                            Object body = entity.getBody();
+                            if (body instanceof String) {
+                                printWriter.write((String) body);
+                            } else {
+                                printWriter.write(objectMapper.writeValueAsString(body));
+                            }
+                        } else if (result instanceof String) {
+                            printWriter.write((String) result);
+                        } else {
+                            printWriter.write(objectMapper.writeValueAsString(result));
+                        }
+                    }
+                    return;
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    resp.setStatus(500);
+                    resp.setContentType("application/json");
+                    printWriter.write("{\"error\":\"Erro interno no servidor\"}");
+                    return;
+                }
+            }
+        }
+
+        resp.setStatus(404);
+        resp.setContentType("application/json");
+        resp.getWriter().write("{\"error\":\"Rota não encontrada\"}");
+    }
+
+    private Object invokeMethod(Method method, Object controllerInstance,
+                                HttpServletRequest req, HttpServletResponse resp,
+                                Map<String, String> pathVariables) throws Exception {
+        Parameter[] parameters = method.getParameters();
+        Object[] args = new Object[parameters.length];
+
+        Map<String, String[]> queryParams = req.getParameterMap();
+
+        for (int i = 0; i < parameters.length; i++) {
+            Parameter p = parameters[i];
+            boolean handled = false;
+
+            for (Annotation ann : p.getAnnotations()) {
+                if (ann instanceof RequestBody) {
+                    args[i] = objectMapper.readValue(req.getReader(), p.getType());
+                    handled = true;
+                    break;
+                } else if (ann instanceof PathVariable) {
+                    String name = ((PathVariable) ann).value();
+                    String val = pathVariables.get(name);
+                    args[i] = convertType(p.getType(), val);
+                    handled = true;
+                    break;
+                } else if (ann instanceof RequestParam) {
+                    String name = ((RequestParam) ann).value();
+                    String[] vals = queryParams.get(name);
+                    if (vals != null && vals.length > 0) {
+                        args[i] = convertType(p.getType(), vals[0]);
+                    } else {
+                        args[i] = null;
+                    }
+                    handled = true;
+                    break;
+                }
+            }
+
+            if (!handled) {
+                // Se não tem anotação, tenta injetar request ou response se for tipo compatível
+                if (HttpServletRequest.class.isAssignableFrom(p.getType())) {
+                    args[i] = req;
+                } else if (HttpServletResponse.class.isAssignableFrom(p.getType())) {
+                    args[i] = resp;
+                } else {
+                    args[i] = null; // ou lançar erro
+                }
+            }
+        }
+
+        return method.invoke(controllerInstance, args);
+    }
+
+    private Object convertType(Class<?> type, String value) {
+        if (value == null) return null;
+        if (type == String.class) return value;
+        if (type == Integer.class || type == int.class) return Integer.parseInt(value);
+        if (type == Long.class || type == long.class) return Long.parseLong(value);
+        if (type == Boolean.class || type == boolean.class) return Boolean.parseBoolean(value);
+        if (type == Double.class || type == double.class) return Double.parseDouble(value);
+        return null; // pode lançar exceção se quiser
+    }
+}

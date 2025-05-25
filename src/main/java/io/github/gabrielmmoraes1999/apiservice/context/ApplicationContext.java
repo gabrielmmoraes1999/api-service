@@ -1,0 +1,26 @@
+package io.github.gabrielmmoraes1999.apiservice.context;
+
+import io.github.gabrielmmoraes1999.apiservice.Functions;
+import io.github.gabrielmmoraes1999.apiservice.annotation.Autowired;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class ApplicationContext {
+
+    private static final Map<Class<?>, Object> beans = new HashMap<>();
+
+    public static void init() {
+        for (Class<?> clazz : Functions.getClasse(Autowired.class)) {
+            try {
+                beans.put(clazz, clazz.getDeclaredConstructor().newInstance());
+            } catch (Exception e) {
+                throw new RuntimeException("Erro ao instanciar bean: " + clazz.getName(), e);
+            }
+        }
+    }
+
+    public static <T> T getBean(Class<T> clazz) {
+        return clazz.cast(beans.get(clazz));
+    }
+}
