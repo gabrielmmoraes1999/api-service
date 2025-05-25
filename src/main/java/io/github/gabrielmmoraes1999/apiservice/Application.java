@@ -8,13 +8,15 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.annotation.Name;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-public class InitializerServer {
+public class Application extends Server {
 
-    public static void start(int port) throws Exception {
-        System.setProperty("org.eclipse.jetty.LEVEL", "OFF");
+    public Application(@Name("port") int port) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        super(port);
 
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
@@ -35,10 +37,6 @@ public class InitializerServer {
             }
         }
 
-        Server server = new Server(port);
-        server.setHandler(context);
-        server.start();
-        System.out.println("Start service port: 8080");
-        server.join();
+        setHandler(context);
     }
 }
