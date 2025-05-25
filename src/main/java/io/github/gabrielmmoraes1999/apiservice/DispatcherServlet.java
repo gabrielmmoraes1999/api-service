@@ -190,6 +190,22 @@ public class DispatcherServlet extends HttpServlet {
                     }
                     handled = true;
                     break;
+                } else if (ann instanceof RequestHeader) {
+                    RequestHeader header = (RequestHeader) ann;
+                    String name = header.value();
+                    String headerValue = req.getHeader(name);
+
+                    if (headerValue == null) {
+                        if (!header.defaultValue().isEmpty()) {
+                            headerValue = header.defaultValue();
+                        } else if (header.required()) {
+                            throw new RuntimeException("Header obrigatório ausente: " + name);
+                        }
+                    }
+
+                    args[i] = convertType(p.getType(), headerValue);
+                    handled = true;
+                    break;
                 }
             }
 
