@@ -171,7 +171,11 @@ public class DispatcherServlet extends HttpServlet {
 
             for (Annotation ann : p.getAnnotations()) {
                 if (ann instanceof RequestBody) {
-                    args[i] = objectMapper.readValue(req.getReader(), p.getType());
+                    if (Map.class.isAssignableFrom(p.getType())) {
+                        args[i] = objectMapper.readValue(req.getReader(), new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+                    } else {
+                        args[i] = objectMapper.readValue(req.getReader(), p.getType());
+                    }
                     handled = true;
                     break;
                 } else if (ann instanceof PathVariable) {
@@ -192,20 +196,34 @@ public class DispatcherServlet extends HttpServlet {
                     break;
                 } else if (ann instanceof RequestHeader) {
                     RequestHeader header = (RequestHeader) ann;
-                    String name = header.value();
-                    String headerValue = req.getHeader(name);
 
-                    if (headerValue == null) {
-                        if (!header.defaultValue().isEmpty()) {
-                            headerValue = header.defaultValue();
-                        } else if (header.required()) {
-                            throw new RuntimeException("Header obrigatório ausente: " + name);
+                    if (Map.class.isAssignableFrom(p.getType())) {
+                        // Injetar todos os headers
+                        Map<String, Object> headersMap = new HashMap<>();
+                        Enumeration<String> headerNames = req.getHeaderNames();
+                        while (headerNames.hasMoreElements()) {
+                            String headerName = headerNames.nextElement();
+                            headersMap.put(headerName, req.getHeader(headerName));
                         }
-                    }
+                        args[i] = headersMap;
+                        handled = true;
+                        break;
+                    } else {
+                        String name = header.value();
+                        String headerValue = req.getHeader(name);
 
-                    args[i] = convertType(p.getType(), headerValue);
-                    handled = true;
-                    break;
+                        if (headerValue == null) {
+                            if (!header.defaultValue().isEmpty()) {
+                                headerValue = header.defaultValue();
+                            } else if (header.required()) {
+                                throw new RuntimeException("Header obrigatório ausente: " + name);
+                            }
+                        }
+
+                        args[i] = convertType(p.getType(), headerValue);
+                        handled = true;
+                        break;
+                    }
                 }
             }
 

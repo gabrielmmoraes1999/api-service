@@ -11,6 +11,7 @@ public class DependencyInjector {
             if (field.isAnnotationPresent(Autowired.class)) {
                 Object dependency = ApplicationContext.getBean(field.getType());
                 field.setAccessible(true);
+
                 try {
                     field.set(instance, dependency);
                 } catch (IllegalAccessException e) {
