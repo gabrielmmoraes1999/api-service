@@ -6,12 +6,14 @@ import io.github.gabrielmmoraes1999.apiservice.annotation.*;
 import io.github.gabrielmmoraes1999.apiservice.context.DependencyInjector;
 import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
 import io.github.gabrielmmoraes1999.apiservice.http.ResponseEntity;
+import io.github.gabrielmmoraes1999.apiservice.json.JSONObject;
 import io.github.gabrielmmoraes1999.apiservice.serializer.*;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
@@ -95,6 +97,9 @@ public class DispatcherServlet extends HttpServlet {
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String httpMethod = req.getMethod();
         String path = req.getPathInfo();
+
+        resp.setCharacterEncoding("UTF-8");
+        resp.setContentType("application/json;charset=UTF-8");
         PrintWriter printWriter = resp.getWriter();
 
         if (path == null) path = "/";
@@ -118,7 +123,6 @@ public class DispatcherServlet extends HttpServlet {
                     }
 
                     Object result = invokeMethod(routeInfo.getMethod(), routeInfo.getControllerInstance(), req, resp, pathVariables);
-                    resp.setContentType("application/json");
 
                     if (result != null) {
                         if (result instanceof ResponseEntity) {
@@ -145,7 +149,6 @@ public class DispatcherServlet extends HttpServlet {
                 } catch (Exception ex) {
                     ex.printStackTrace();
                     resp.setStatus(500);
-                    resp.setContentType("application/json");
                     printWriter.write("{\"error\":\"Erro interno no servidor\"}");
                     return;
                 }
@@ -153,7 +156,6 @@ public class DispatcherServlet extends HttpServlet {
         }
 
         resp.setStatus(404);
-        resp.setContentType("application/json");
         resp.getWriter().write("{\"error\":\"Rota não encontrada\"}");
     }
 
@@ -173,9 +175,20 @@ public class DispatcherServlet extends HttpServlet {
                 if (ann instanceof RequestBody) {
                     if (Map.class.isAssignableFrom(p.getType())) {
                         args[i] = objectMapper.readValue(req.getReader(), new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+                    } else if (JSONObject.class.isAssignableFrom(p.getType())) {
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+
+                        BufferedReader reader = req.getReader();
+                        while ((line = reader.readLine()) != null) {
+                            sb.append(line);
+                        }
+
+                        args[i] = new JSONObject(sb.toString());
                     } else {
                         args[i] = objectMapper.readValue(req.getReader(), p.getType());
                     }
+
                     handled = true;
                     break;
                 } else if (ann instanceof PathVariable) {
@@ -201,11 +214,25 @@ public class DispatcherServlet extends HttpServlet {
                         // Injetar todos os headers
                         Map<String, Object> headersMap = new HashMap<>();
                         Enumeration<String> headerNames = req.getHeaderNames();
+
                         while (headerNames.hasMoreElements()) {
                             String headerName = headerNames.nextElement();
                             headersMap.put(headerName, req.getHeader(headerName));
                         }
+
                         args[i] = headersMap;
+                        handled = true;
+                        break;
+                    } else if (JSONObject.class.isAssignableFrom(p.getType())) {
+                        JSONObject jsonObject = new JSONObject();
+                        Enumeration<String> headerNames = req.getHeaderNames();
+
+                        while (headerNames.hasMoreElements()) {
+                            String headerName = headerNames.nextElement();
+                            jsonObject.put(headerName, req.getHeader(headerName));
+                        }
+
+                        args[i] = jsonObject;
                         handled = true;
                         break;
                     } else {
