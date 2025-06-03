@@ -2902,54 +2902,38 @@ public class JSONObject {
      * occurs
      */
     @SuppressWarnings("resource")
-    public Writer write(Writer writer, int indentFactor, int indent)
-            throws JSONException {
+    public Writer write(Writer writer, int indentFactor, int indent) throws JSONException {
         try {
             boolean needsComma = false;
-            final int length = this.length();
             writer.write('{');
 
-            if (length == 1) {
-            	final Entry<String,?> entry = this.entrySet().iterator().next();
+            final int newIndent = indent + indentFactor;
+            for (final Entry<String, ?> entry : this.entrySet()) {
+                if (needsComma) {
+                    writer.write(',');
+                }
+                if (indentFactor > 0) {
+                    writer.write('\n');
+                }
+                indent(writer, newIndent);
                 final String key = entry.getKey();
                 writer.write(quote(key));
                 writer.write(':');
                 if (indentFactor > 0) {
                     writer.write(' ');
                 }
-                try{
-                    writeValue(writer, entry.getValue(), indentFactor, indent);
+                try {
+                    writeValue(writer, entry.getValue(), indentFactor, newIndent);
                 } catch (Exception e) {
                     throw new JSONException("Unable to write JSONObject value for key: " + key, e);
                 }
-            } else if (length != 0) {
-                final int newIndent = indent + indentFactor;
-                for (final Entry<String,?> entry : this.entrySet()) {
-                    if (needsComma) {
-                        writer.write(',');
-                    }
-                    if (indentFactor > 0) {
-                        writer.write('\n');
-                    }
-                    indent(writer, newIndent);
-                    final String key = entry.getKey();
-                    writer.write(quote(key));
-                    writer.write(':');
-                    if (indentFactor > 0) {
-                        writer.write(' ');
-                    }
-                    try {
-                        writeValue(writer, entry.getValue(), indentFactor, newIndent);
-                    } catch (Exception e) {
-                        throw new JSONException("Unable to write JSONObject value for key: " + key, e);
-                    }
-                    needsComma = true;
-                }
-                if (indentFactor > 0) {
-                    writer.write('\n');
-                }
-                indent(writer, indent);
+                needsComma = true;
             }
+            if (indentFactor > 0) {
+                writer.write('\n');
+            }
+            indent(writer, indent);
+
             writer.write('}');
             return writer;
         } catch (IOException exception) {
