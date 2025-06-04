@@ -25,9 +25,15 @@ import java.util.regex.Matcher;
 
 public class DispatcherServlet extends HttpServlet {
 
-    private final static Map<String, Set<String>> registeredPaths = new HashMap<>();
-    private final Map<String, List<RouteInfo>> routes = new HashMap<>();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final Map<String, Set<String>> registeredPaths;
+    private final Map<String, List<RouteInfo>> routes;
+    private final ObjectMapper objectMapper;
+
+    public DispatcherServlet() {
+        this.registeredPaths = new HashMap<>();
+        this.routes = new HashMap<>();
+        this.objectMapper = new ObjectMapper();
+    }
 
     @Override
     public void init() throws ServletException {
@@ -45,7 +51,7 @@ public class DispatcherServlet extends HttpServlet {
             simpleModule.addDeserializer(java.sql.Timestamp.class, new TimestampDeserializer());
             objectMapper.registerModule(simpleModule);
 
-            for (Class<?> controller : Functions.getReflections().getTypesAnnotatedWith(RestController.class)) {
+            for (Class<?> controller : Functions.getClassesWithAnnotation(RestController.class)) {
                 RestController restController = controller.getAnnotation(RestController.class);
                 Object controllerInstance = controller.getConstructor().newInstance();
                 DependencyInjector.injectAutowiredDependencies(controllerInstance);

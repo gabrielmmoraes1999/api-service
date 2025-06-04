@@ -1,5 +1,8 @@
 package io.github.gabrielmmoraes1999.apiservice;
 
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ScanResult;
 import org.reflections.Reflections;
 import org.reflections.scanners.FieldAnnotationsScanner;
 import org.reflections.scanners.SubTypesScanner;
@@ -14,14 +17,22 @@ import java.util.List;
 
 public class Functions {
 
-    public static List<Class<?>> getClasse(Class<? extends Annotation> annotationClass) {
+    public static List<Class<?>> getClassesWithAnnotationPresent(Class<? extends Annotation> annotationClass) {
         List<Class<?>> result = new ArrayList<>();
 
-        for (Class<?> clazz : Functions.getReflections().getSubTypesOf(Object.class)) {
-            for (Field field : clazz.getDeclaredFields()) {
-                Class<?> classType = field.getType();
-                if (field.isAnnotationPresent(annotationClass) && !result.contains(classType)) {
-                    result.add(classType);
+        try (ScanResult scanResult = new ClassGraph().enableAllInfo().scan()) {
+            for (ClassInfo classInfo : scanResult.getAllClasses()) {
+                try {
+                    Class<?> clazz = classInfo.loadClass();
+
+                    for (Field field : clazz.getDeclaredFields()) {
+                        Class<?> classType = field.getType();
+                        if (field.isAnnotationPresent(annotationClass) && !result.contains(classType)) {
+                            result.add(classType);
+                        }
+                    }
+                } catch (Exception | NoClassDefFoundError ignore) {
+
                 }
             }
         }
@@ -29,6 +40,38 @@ public class Functions {
         return result;
     }
 
+    public static List<Class<?>> getClassesWithAnnotationPresent(List<Class<?>> classList, Class<? extends Annotation> annotationClass) {
+        List<Class<?>> result = new ArrayList<>();
+
+        for (Class<?> clazz : classList) {
+            try {
+                for (Field field : clazz.getDeclaredFields()) {
+                    Class<?> classType = field.getType();
+                    if (field.isAnnotationPresent(annotationClass) && !result.contains(classType)) {
+                        result.add(classType);
+                    }
+                }
+            } catch (Exception | NoClassDefFoundError ignore) {
+
+            }
+        }
+
+        return result;
+    }
+
+    public static List<Class<?>> getClassesWithAnnotation(Class<? extends Annotation> annotation) {
+        List<Class<?>> classList = new ArrayList<>();
+
+        try (ScanResult scanResult = new ClassGraph().enableAllInfo().scan()) {
+            for (ClassInfo classInfo : scanResult.getClassesWithAnnotation(annotation.getName())) {
+                classList.add(classInfo.loadClass());
+            }
+        }
+
+        return classList;
+    }
+
+    @Deprecated
     public static Reflections getReflections() {
         return new Reflections(
                 new ConfigurationBuilder()

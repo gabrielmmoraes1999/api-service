@@ -22,7 +22,7 @@ public class Application extends Server {
         context.setContextPath("/");
         context.addServlet(new ServletHolder(new DispatcherServlet()), "/*");
 
-        for (Class<?> configClass : Functions.getReflections().getTypesAnnotatedWith(Configuration.class)) {
+        for (Class<?> configClass : Functions.getClassesWithAnnotation(Configuration.class)) {
             if (configClass.isAnnotationPresent(EnableWebSecurity.class)) {
                 Object configInstance = configClass.getConstructor().newInstance();
 

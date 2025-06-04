@@ -11,7 +11,7 @@ public class ApplicationContext {
     private static final Map<Class<?>, Object> beans = new HashMap<>();
 
     public static void init() {
-        for (Class<?> clazz : Functions.getClasse(Autowired.class)) {
+        for (Class<?> clazz : Functions.getClassesWithAnnotationPresent(Autowired.class)) {
             try {
                 beans.put(clazz, clazz.getDeclaredConstructor().newInstance());
             } catch (Exception e) {
