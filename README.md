@@ -1,4 +1,4 @@
-# DBRepository [![MIT License](https://img.shields.io/github/license/gabrielmmoraes1999/api-service.svg) ](https://github.com/gabrielmmoraes1999/api-service/blob/main/LICENSE) [![Maven Central](https://img.shields.io/maven-central/v/io.github.gabrielmmoraes1999/api-service.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.gabrielmmoraes1999/DBRepository)
+# api-service [![MIT License](https://img.shields.io/github/license/gabrielmmoraes1999/api-service.svg) ](https://github.com/gabrielmmoraes1999/api-service/blob/main/LICENSE) [![Maven Central](https://img.shields.io/maven-central/v/io.github.gabrielmmoraes1999/api-service.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.gabrielmmoraes1999/DBRepository)
 Biblioteca Java para manipulação de banco de dados.
 
 Importação da biblioteca:
