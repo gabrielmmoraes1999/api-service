@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.github.gabrielmmoraes1999.apiservice.annotation.*;
 import io.github.gabrielmmoraes1999.apiservice.context.DependencyInjector;
-import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
 import io.github.gabrielmmoraes1999.apiservice.http.ResponseEntity;
 import io.github.gabrielmmoraes1999.apiservice.json.JSONObject;
 import io.github.gabrielmmoraes1999.apiservice.serializer.*;
@@ -38,9 +37,6 @@ public class DispatcherServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         try {
-            ConfigSerializer.init();
-            ApplicationContext.init();
-
             SimpleModule simpleModule = new SimpleModule();
             simpleModule.addSerializer(java.sql.Date.class, new DateSqlSerializer());
             simpleModule.addSerializer(java.time.LocalDateTime.class, new LocalDateTimeSerializer());
