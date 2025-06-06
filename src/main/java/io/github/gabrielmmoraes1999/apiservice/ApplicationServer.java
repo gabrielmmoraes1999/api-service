@@ -25,6 +25,22 @@ public class ApplicationServer extends Server {
         this.init();
     }
 
+    public ApplicationServer(Class<?> appClass) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        super(Integer.parseInt(System.getProperty("io.github.gabrielmmoraes1999.apiservice.ApplicationServer.port")));
+
+        ConfigSerializer.init();
+        ApplicationContext.init(appClass);
+        this.init();
+    }
+
+    public ApplicationServer(Class<?> appClass, @Name("port") int port) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        super(port);
+
+        ConfigSerializer.init();
+        ApplicationContext.init(appClass);
+        this.init();
+    }
+
     public ApplicationServer(@Name("port") int port) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         super(port);
 

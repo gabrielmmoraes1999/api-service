@@ -7,7 +7,6 @@ import org.reflections.Reflections;
 import org.reflections.scanners.FieldAnnotationsScanner;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.scanners.TypeAnnotationsScanner;
-import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 
 import java.lang.annotation.Annotation;
@@ -17,10 +16,12 @@ import java.util.List;
 
 public class Functions {
 
+    private static String[] packages = new String[]{""};
+
     public static List<Class<?>> getClassesWithAnnotationPresent(Class<? extends Annotation> annotationClass) {
         List<Class<?>> result = new ArrayList<>();
 
-        try (ScanResult scanResult = new ClassGraph().enableAllInfo().scan()) {
+        try (ScanResult scanResult = new ClassGraph().enableAllInfo().acceptPackages(packages).scan()) {
             for (ClassInfo classInfo : scanResult.getAllClasses()) {
                 try {
                     Class<?> clazz = classInfo.loadClass();
@@ -62,7 +63,7 @@ public class Functions {
     public static List<Class<?>> getClassesWithAnnotation(Class<? extends Annotation> annotation) {
         List<Class<?>> classList = new ArrayList<>();
 
-        try (ScanResult scanResult = new ClassGraph().enableAllInfo().scan()) {
+        try (ScanResult scanResult = new ClassGraph().enableAllInfo().acceptPackages(packages).scan()) {
             for (ClassInfo classInfo : scanResult.getClassesWithAnnotation(annotation.getName())) {
                 classList.add(classInfo.loadClass());
             }
@@ -71,11 +72,15 @@ public class Functions {
         return classList;
     }
 
+    public static void setPackages(String[] packages) {
+        Functions.packages = packages;
+    }
+
     @Deprecated
     public static Reflections getReflections() {
         return new Reflections(
                 new ConfigurationBuilder()
-                        .setUrls(ClasspathHelper.forPackage(Functions.getPackager()))
+                        //.setUrls(ClasspathHelper.forPackage(Functions.getPackager()))
                         //.addUrls(ClasspathHelper.forClassLoader())
                         .setScanners(
                                 new SubTypesScanner(false),
@@ -84,22 +89,4 @@ public class Functions {
                         )
         );
     }
-
-    public static String getPackager() {
-        Thread mainThread = Thread.currentThread();
-        StackTraceElement[] stackTrace = mainThread.getStackTrace();
-
-        try {
-            for (StackTraceElement element : stackTrace) {
-                if (element.getMethodName().equals("main")) {
-                    return Class.forName(element.getClassName()).getPackage().getName();
-                }
-            }
-
-            return null;
-        } catch (ClassNotFoundException ignore) {
-            return null;
-        }
-    }
-
 }
