@@ -41,25 +41,6 @@ public class Functions {
         return result;
     }
 
-    public static List<Class<?>> getClassesWithAnnotationPresent(List<Class<?>> classList, Class<? extends Annotation> annotationClass) {
-        List<Class<?>> result = new ArrayList<>();
-
-        for (Class<?> clazz : classList) {
-            try {
-                for (Field field : clazz.getDeclaredFields()) {
-                    Class<?> classType = field.getType();
-                    if (field.isAnnotationPresent(annotationClass) && !result.contains(classType)) {
-                        result.add(classType);
-                    }
-                }
-            } catch (Exception | NoClassDefFoundError ignore) {
-
-            }
-        }
-
-        return result;
-    }
-
     public static List<Class<?>> getClassesWithAnnotation(Class<? extends Annotation> annotation) {
         List<Class<?>> classList = new ArrayList<>();
 
