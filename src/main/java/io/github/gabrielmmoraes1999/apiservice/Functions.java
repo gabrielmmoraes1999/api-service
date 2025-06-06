@@ -3,11 +3,6 @@ package io.github.gabrielmmoraes1999.apiservice;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ScanResult;
-import org.reflections.Reflections;
-import org.reflections.scanners.FieldAnnotationsScanner;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.scanners.TypeAnnotationsScanner;
-import org.reflections.util.ConfigurationBuilder;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -57,17 +52,4 @@ public class Functions {
         Functions.packages = packages;
     }
 
-    @Deprecated
-    public static Reflections getReflections() {
-        return new Reflections(
-                new ConfigurationBuilder()
-                        //.setUrls(ClasspathHelper.forPackage(Functions.getPackager()))
-                        //.addUrls(ClasspathHelper.forClassLoader())
-                        .setScanners(
-                                new SubTypesScanner(false),
-                                new FieldAnnotationsScanner(),
-                                new TypeAnnotationsScanner()
-                        )
-        );
-    }
 }
