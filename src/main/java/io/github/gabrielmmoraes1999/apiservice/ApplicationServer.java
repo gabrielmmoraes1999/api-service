@@ -17,12 +17,23 @@ import java.lang.reflect.Method;
 
 public class ApplicationServer extends Server {
 
+    public ApplicationServer() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        super(Integer.parseInt(System.getProperty("io.github.gabrielmmoraes1999.apiservice.ApplicationServer.port")));
+
+        ConfigSerializer.init();
+        ApplicationContext.init();
+        this.init();
+    }
+
     public ApplicationServer(@Name("port") int port) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         super(port);
 
         ConfigSerializer.init();
         ApplicationContext.init();
+        this.init();
+    }
 
+    private void init() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         context.addServlet(new ServletHolder(new DispatcherServlet()), "/*");
@@ -44,4 +55,5 @@ public class ApplicationServer extends Server {
 
         setHandler(context);
     }
+
 }
