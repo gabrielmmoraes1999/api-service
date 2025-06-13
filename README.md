@@ -10,6 +10,9 @@ Importação da biblioteca:
     <version>1.1.1</version>
 </dependency>
 ```
+
+Veja a Wiki https://github.com/gabrielmmoraes1999/api-service/wiki, para ter um Tutorial Completo.
+
 ________________________________________________________________________________________________
 
 # Histórico de Versões
