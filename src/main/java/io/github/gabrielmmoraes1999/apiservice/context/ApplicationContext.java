@@ -12,11 +12,12 @@ public class ApplicationContext {
     private static final Map<Class<?>, Object> beans = new HashMap<>();
 
     public static void init(Class<?> appClass) {
-        if (!appClass.isAnnotationPresent(ComponentScan.class)) {
-            throw new RuntimeException("Missing @ComponentScan on main class");
+        if (appClass.isAnnotationPresent(ComponentScan.class)) {
+            Functions.setPackages(appClass.getAnnotation(ComponentScan.class).basePackages());
+        } else {
+            Functions.setPackages(new String[]{appClass.getPackage().getName()});
         }
 
-        Functions.setPackages(appClass.getAnnotation(ComponentScan.class).basePackages());
         ApplicationContext.init();
     }
 

@@ -1,75 +1,36 @@
 package io.github.gabrielmmoraes1999.apiservice;
 
-import io.github.gabrielmmoraes1999.apiservice.annotation.Bean;
-import io.github.gabrielmmoraes1999.apiservice.annotation.Configuration;
-import io.github.gabrielmmoraes1999.apiservice.annotation.EnableWebSecurity;
-import io.github.gabrielmmoraes1999.apiservice.auth.BasicAuthFilter;
-import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
-import io.github.gabrielmmoraes1999.apiservice.serializer.ConfigSerializer;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.annotation.Name;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.util.Objects;
 
-public class ApplicationServer extends Server {
+public class ApplicationServer {
 
-    public ApplicationServer() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        super(Integer.parseInt(System.getProperty("io.github.gabrielmmoraes1999.apiservice.ApplicationServer.port")));
+    private static ManagerServer managerServer;
 
-        ConfigSerializer.init();
-        ApplicationContext.init();
-        this.init();
+    public static void run() throws Exception {
+        managerServer = new ManagerServer();
+        managerServer.start();
     }
 
-    public ApplicationServer(Class<?> appClass) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        super(Integer.parseInt(System.getProperty("io.github.gabrielmmoraes1999.apiservice.ApplicationServer.port")));
-
-        ConfigSerializer.init();
-        ApplicationContext.init(appClass);
-        this.init();
+    public static void run(Class<?> appClass) throws Exception {
+        managerServer = new ManagerServer(appClass);
+        managerServer.start();
     }
 
-    public ApplicationServer(Class<?> appClass, @Name("port") int port) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        super(port);
-
-        ConfigSerializer.init();
-        ApplicationContext.init(appClass);
-        this.init();
+    public static void run(Class<?> appClass, @Name("port") int port) throws Exception {
+        managerServer = new ManagerServer(appClass, port);
+        managerServer.start();
     }
 
-    public ApplicationServer(@Name("port") int port) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        super(port);
-
-        ConfigSerializer.init();
-        ApplicationContext.init();
-        this.init();
+    public static void run(@Name("port") int port) throws Exception {
+        managerServer = new ManagerServer(port);
+        managerServer.start();
     }
 
-    private void init() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/");
-        context.addServlet(new ServletHolder(new DispatcherServlet()), "/*");
-
-        for (Class<?> configClass : Functions.getClassesWithAnnotation(Configuration.class)) {
-            if (configClass.isAnnotationPresent(EnableWebSecurity.class)) {
-                Object configInstance = configClass.getConstructor().newInstance();
-
-                for (Method method : configClass.getDeclaredMethods()) {
-                    if (method.isAnnotationPresent(Bean.class)) {
-                        Object bean = method.invoke(configInstance);
-                        if (bean instanceof BasicAuthFilter) {
-                            context.addFilter(new FilterHolder((BasicAuthFilter) bean), "/*", null);
-                        }
-                    }
-                }
-            }
+    public static void stop() throws Exception {
+        if (Objects.nonNull(managerServer)) {
+            managerServer.stop();
         }
-
-        setHandler(context);
     }
-
 }
