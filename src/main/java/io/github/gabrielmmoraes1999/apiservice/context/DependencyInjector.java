@@ -15,7 +15,7 @@ public class DependencyInjector {
                 try {
                     field.set(instance, dependency);
                 } catch (IllegalAccessException e) {
-                    throw new RuntimeException("Falha ao injetar dependência: " + field.getName(), e);
+                    throw new RuntimeException("Failed to inject dependency: " + field.getName(), e);
                 }
             }
         }
