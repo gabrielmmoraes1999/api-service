@@ -7,12 +7,16 @@ Importação da biblioteca:
 <dependency>
     <groupId>io.github.gabrielmmoraes1999</groupId>
     <artifactId>api-service</artifactId>
-    <version>1.1</version>
+    <version>1.1.1</version>
 </dependency>
 ```
 ________________________________________________________________________________________________
 
 # Histórico de Versões
+
+## v1.1.1 - 13/06/2025
+- Organização do 'run' do projeto.
+- Adicionado para pegar o pacote de forma automático da classe informada.
 
 ## v1.1 - 06/06/2025
 - Adicionado a anotação @ComponentScan possibilitando informar os pacotes com component.
