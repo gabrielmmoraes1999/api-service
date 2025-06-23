@@ -8,5 +8,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface ComponentScan {
-    String[] basePackages();
+    String[] basePackages() default {};
+    Class<?>[] baseClass() default {};
 }

@@ -13,7 +13,15 @@ public class ApplicationContext {
 
     public static void init(Class<?> appClass) {
         if (appClass.isAnnotationPresent(ComponentScan.class)) {
-            Functions.setPackages(appClass.getAnnotation(ComponentScan.class).basePackages());
+            String[] packages = appClass.getAnnotation(ComponentScan.class).basePackages();
+
+            if (packages.length > 0) {
+                Functions.setPackages(packages);
+            } else {
+                Functions.setPackages(new String[]{appClass.getPackage().getName()});
+            }
+
+            Functions.setClasses(appClass.getAnnotation(ComponentScan.class).baseClass());
         } else {
             Functions.setPackages(new String[]{appClass.getPackage().getName()});
         }

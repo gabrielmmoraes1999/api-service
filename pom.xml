@@ -6,7 +6,7 @@
 
     <groupId>io.github.gabrielmmoraes1999</groupId>
     <artifactId>api-service</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
 
     <name>ApiService</name>
     <description>Create api request.</description>
