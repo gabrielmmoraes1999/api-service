@@ -1,0 +1,45 @@
+package io.github.gabrielmmoraes1999.service.config;
+
+import io.github.gabrielmmoraes1999.apiservice.annotation.Bean;
+import io.github.gabrielmmoraes1999.apiservice.annotation.Configuration;
+import io.github.gabrielmmoraes1999.apiservice.annotation.EnableWebSecurity;
+import io.github.gabrielmmoraes1999.apiservice.auth.JwtAuthFilter;
+import io.github.gabrielmmoraes1999.apiservice.http.HttpMethod;
+import io.github.gabrielmmoraes1999.apiservice.teste.HttpSecurity;
+import io.github.gabrielmmoraes1999.apiservice.teste.SecurityFilterChain;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+//    @Bean
+//    public BasicAuthFilter basicAuthFilter() {
+//        return new BasicAuthFilter("admin", "admin");
+//    }
+
+    @Bean
+    public JwtAuthFilter jwtAuthFilter() {
+        return new JwtAuthFilter();
+    }
+
+//    @Bean
+//    public JwtAuthFilter2 jwtAuthFilter() {
+//        return new JwtAuthFilter2(Arrays.asList(""));
+//    }
+
+//    @Bean
+//    public SecurityFilter securityFilter() {
+//        return new SecurityFilter();
+//    }
+
+    @Bean
+    public SecurityFilterChain authFilterChain(HttpSecurity httpSecurity) {
+        return httpSecurity.authorizeHttpRequests(auth -> auth
+                        .antMatchers("/websocket/**").permitAll()
+                        .antMatchers(null, "/api/users/**").hasAnyRole("ADMIN")
+                        .antMatchers(HttpMethod.GET, "/updates/**").permitAll()
+                        .anyRequest()
+                        .authenticated()
+                ).build();
+    }
+}
