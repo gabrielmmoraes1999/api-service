@@ -5,8 +5,8 @@ import io.github.gabrielmmoraes1999.apiservice.annotation.Configuration;
 import io.github.gabrielmmoraes1999.apiservice.annotation.EnableWebSecurity;
 import io.github.gabrielmmoraes1999.apiservice.auth.JwtAuthFilter;
 import io.github.gabrielmmoraes1999.apiservice.http.HttpMethod;
-import io.github.gabrielmmoraes1999.apiservice.teste.HttpSecurity;
-import io.github.gabrielmmoraes1999.apiservice.teste.SecurityFilterChain;
+import io.github.gabrielmmoraes1999.apiservice.security.web.HttpSecurity;
+import io.github.gabrielmmoraes1999.apiservice.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
@@ -22,16 +22,6 @@ public class SecurityConfig {
         return new JwtAuthFilter();
     }
 
-//    @Bean
-//    public JwtAuthFilter2 jwtAuthFilter() {
-//        return new JwtAuthFilter2(Arrays.asList(""));
-//    }
-
-//    @Bean
-//    public SecurityFilter securityFilter() {
-//        return new SecurityFilter();
-//    }
-
     @Bean
     public SecurityFilterChain authFilterChain(HttpSecurity httpSecurity) {
         return httpSecurity.authorizeHttpRequests(auth -> auth
@@ -42,4 +32,5 @@ public class SecurityConfig {
                         .authenticated()
                 ).build();
     }
+
 }

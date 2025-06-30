@@ -1,4 +1,4 @@
-package io.github.gabrielmmoraes1999.apiservice.teste;
+package io.github.gabrielmmoraes1999.apiservice.security.web;
 
 import io.github.gabrielmmoraes1999.apiservice.http.HttpMethod;
 import io.github.gabrielmmoraes1999.apiservice.security.SecurityRule;
@@ -33,4 +33,5 @@ public class AuthorizationBuilder {
     public List<SecurityRule> getRules() {
         return rules;
     }
+
 }

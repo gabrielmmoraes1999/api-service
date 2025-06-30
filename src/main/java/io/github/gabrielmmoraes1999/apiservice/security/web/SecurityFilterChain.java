@@ -1,4 +1,4 @@
-package io.github.gabrielmmoraes1999.apiservice.teste;
+package io.github.gabrielmmoraes1999.apiservice.security.web;
 
 import io.github.gabrielmmoraes1999.apiservice.security.SecurityRule;
 

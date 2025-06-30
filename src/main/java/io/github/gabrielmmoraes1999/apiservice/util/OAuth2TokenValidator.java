@@ -1,4 +1,4 @@
-package io.github.gabrielmmoraes1999.apiservice.auth;
+package io.github.gabrielmmoraes1999.apiservice.util;
 
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.JWSVerifier;

@@ -48,4 +48,24 @@ public class Login implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
+    public String getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setRole(LoginRole role) {
+        this.role = role;
+    }
 }

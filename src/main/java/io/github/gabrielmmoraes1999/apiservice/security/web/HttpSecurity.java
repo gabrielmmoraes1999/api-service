@@ -1,4 +1,4 @@
-package io.github.gabrielmmoraes1999.apiservice.teste;
+package io.github.gabrielmmoraes1999.apiservice.security.web;
 
 import io.github.gabrielmmoraes1999.apiservice.security.SecurityRule;
 
@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class HttpSecurity {
+
     private final List<SecurityRule> rules = new ArrayList<>();
 
     public HttpSecurity authorizeHttpRequests(Consumer<AuthorizationBuilder> consumer) {
@@ -19,5 +20,6 @@ public class HttpSecurity {
     public SecurityFilterChain build() {
         return new SecurityFilterChain(rules);
     }
+
 }
 

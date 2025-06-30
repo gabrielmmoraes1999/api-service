@@ -1,23 +1,20 @@
 package io.github.gabrielmmoraes1999.apiservice.auth;
 
 import io.github.gabrielmmoraes1999.apiservice.security.GrantedAuthority;
+import io.github.gabrielmmoraes1999.apiservice.security.SecurityContextHolder;
 import io.github.gabrielmmoraes1999.apiservice.security.SecurityRule;
 import io.github.gabrielmmoraes1999.apiservice.security.UserDetails;
-import io.github.gabrielmmoraes1999.apiservice.teste.SecurityFilterChain;
+import io.github.gabrielmmoraes1999.apiservice.security.web.SecurityFilterChain;
 import io.github.gabrielmmoraes1999.apiservice.util.JwtTokenValidator;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 public class JwtAuthFilter implements Filter {
-
-    private List<Login> list = new ArrayList<>();
 
     @Override
     public void init(FilterConfig filterConfig) {
@@ -46,7 +43,7 @@ public class JwtAuthFilter implements Filter {
             return;
         }
 
-        Optional<SecurityRule> ruleOpt = SecurityFilterChain.getRule(path, method); //SecurityConfig
+        Optional<SecurityRule> ruleOpt = SecurityFilterChain.getRule(path, method);
 
         if (!ruleOpt.isPresent()) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Acesso negado");
@@ -72,7 +69,7 @@ public class JwtAuthFilter implements Filter {
                     return;
                 }
 
-                UserDetails userDetails = list.get(0);
+                UserDetails userDetails = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
                 if (userDetails == null) {
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuário não encontrado");
@@ -91,7 +88,7 @@ public class JwtAuthFilter implements Filter {
                 }
 
                 // OK
-                request.setAttribute("UserDetails", userDetails);
+                //request.setAttribute("userDetails", userDetails);
                 chain.doFilter(req, res);
                 break;
         }
