@@ -48,47 +48,7 @@ public class DispatcherServlet extends HttpServlet {
             objectMapper.registerModule(simpleModule);
 
             for (Class<?> controller : Functions.getClassesWithAnnotation(RestController.class)) {
-                RestController restController = controller.getAnnotation(RestController.class);
-                Object controllerInstance = controller.getConstructor().newInstance();
-                DependencyInjector.injectAutowiredDependencies(controllerInstance);
-
-                String basePath = restController.value();
-                if (!basePath.startsWith("/")) basePath = "/" + basePath;
-                if (basePath.endsWith("/")) basePath = basePath.substring(0, basePath.length() - 1);
-
-                for (Method method : controller.getDeclaredMethods()) {
-                    String httpMethod = null;
-                    String routePath = null;
-
-                    if (method.isAnnotationPresent(GetMapping.class)) {
-                        httpMethod = "GET";
-                        routePath = Objects.requireNonNull(method.getAnnotation(GetMapping.class)).value();
-                    } else if (method.isAnnotationPresent(PostMapping.class)) {
-                        httpMethod = "POST";
-                        routePath = Objects.requireNonNull(method.getAnnotation(PostMapping.class)).value();
-                    } else if (method.isAnnotationPresent(PutMapping.class)) {
-                        httpMethod = "PUT";
-                        routePath = Objects.requireNonNull(method.getAnnotation(PutMapping.class)).value();
-                    } else if (method.isAnnotationPresent(DeleteMapping.class)) {
-                        httpMethod = "DELETE";
-                        routePath = Objects.requireNonNull(method.getAnnotation(DeleteMapping.class)).value();
-                    }
-
-                    if (httpMethod != null && routePath != null) {
-                        String fullPath = basePath + (routePath.startsWith("/") ? routePath : "/" + routePath);
-                        RouteInfo routeInfo = RouteInfo.createRouteInfo(method, controllerInstance, fullPath);
-
-                        registeredPaths.putIfAbsent(httpMethod, new HashSet<>());
-                        Set<String> paths = registeredPaths.get(httpMethod);
-
-                        if (paths.contains(fullPath)) {
-                            throw new ServletException("Duplicate Route: [" + httpMethod + " " + fullPath + "]");
-                        }
-                        paths.add(fullPath);
-
-                        routes.computeIfAbsent(httpMethod, k -> new ArrayList<>()).add(routeInfo);
-                    }
-                }
+                addRestController(controller);
             }
         } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException ex) {
             throw new RuntimeException(ex);
@@ -271,6 +231,50 @@ public class DispatcherServlet extends HttpServlet {
         return method.invoke(controllerInstance, args);
     }
 
+    public void addRestController(Class<?> controller) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ServletException {
+        RestController restController = controller.getAnnotation(RestController.class);
+        Object controllerInstance = controller.getConstructor().newInstance();
+        DependencyInjector.injectAutowiredDependencies(controllerInstance);
+
+        String basePath = restController.value();
+        if (!basePath.startsWith("/")) basePath = "/" + basePath;
+        if (basePath.endsWith("/")) basePath = basePath.substring(0, basePath.length() - 1);
+
+        for (Method method : controller.getDeclaredMethods()) {
+            String httpMethod = null;
+            String routePath = null;
+
+            if (method.isAnnotationPresent(GetMapping.class)) {
+                httpMethod = "GET";
+                routePath = Objects.requireNonNull(method.getAnnotation(GetMapping.class)).value();
+            } else if (method.isAnnotationPresent(PostMapping.class)) {
+                httpMethod = "POST";
+                routePath = Objects.requireNonNull(method.getAnnotation(PostMapping.class)).value();
+            } else if (method.isAnnotationPresent(PutMapping.class)) {
+                httpMethod = "PUT";
+                routePath = Objects.requireNonNull(method.getAnnotation(PutMapping.class)).value();
+            } else if (method.isAnnotationPresent(DeleteMapping.class)) {
+                httpMethod = "DELETE";
+                routePath = Objects.requireNonNull(method.getAnnotation(DeleteMapping.class)).value();
+            }
+
+            if (httpMethod != null && routePath != null) {
+                String fullPath = basePath + (routePath.startsWith("/") ? routePath : "/" + routePath);
+                RouteInfo routeInfo = RouteInfo.createRouteInfo(method, controllerInstance, fullPath);
+
+                registeredPaths.putIfAbsent(httpMethod, new HashSet<>());
+                Set<String> paths = registeredPaths.get(httpMethod);
+
+                if (paths.contains(fullPath)) {
+                    throw new ServletException("Duplicate Route: [" + httpMethod + " " + fullPath + "]");
+                }
+                paths.add(fullPath);
+
+                routes.computeIfAbsent(httpMethod, k -> new ArrayList<>()).add(routeInfo);
+            }
+        }
+    }
+
     private Object convertType(Class<?> type, String value) {
         if (value == null) return null;
         if (type == String.class) return value;
@@ -280,4 +284,5 @@ public class DispatcherServlet extends HttpServlet {
         if (type == Double.class || type == double.class) return Double.parseDouble(value);
         return null; // pode lançar exceção se quiser
     }
+
 }
