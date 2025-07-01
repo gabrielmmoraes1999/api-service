@@ -64,11 +64,17 @@ public class ManagerServer extends Server {
         context.addServlet(new ServletHolder(dispatcherServlet), "/*");
 
         for (Class<?> clazz : Functions.getClassesWithAnnotation(Component.class)) {
-            Object bean = clazz.getConstructor().newInstance();
+            Object configInstance = clazz.getConstructor().newInstance();
 
             if (Filter.class.isAssignableFrom(clazz)) {
-                FilterHolder filterHolder = new FilterHolder((Filter) bean);
+                FilterHolder filterHolder = new FilterHolder((Filter) configInstance);
                 context.addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+            }
+
+            for (Method method : clazz.getDeclaredMethods()) {
+                if (method.isAnnotationPresent(Bean.class)) {
+                    method.invoke(configInstance);
+                }
             }
         }
 

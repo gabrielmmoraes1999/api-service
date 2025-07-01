@@ -13,7 +13,7 @@ public class JwtTokenValidator {
     private static final String ISSUER = "your-api";
     private static final String SECRET = "secreta-chave-jwt";
 
-    public static String generateJwtToken(String username, int expiresIn) {
+    public static String generateJwtToken(String username, long expiresIn) {
         Instant now = Instant.now();
         return JWT.create()
                 .withIssuer(ISSUER)
