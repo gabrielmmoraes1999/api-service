@@ -1,11 +1,12 @@
 package io.github.gabrielmmoraes1999.apiservice.auth;
 
+import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
 import io.github.gabrielmmoraes1999.apiservice.security.GrantedAuthority;
 import io.github.gabrielmmoraes1999.apiservice.security.SecurityContextHolder;
 import io.github.gabrielmmoraes1999.apiservice.security.SecurityRule;
 import io.github.gabrielmmoraes1999.apiservice.security.UserDetails;
+import io.github.gabrielmmoraes1999.apiservice.security.jwt.ProviderJwt;
 import io.github.gabrielmmoraes1999.apiservice.security.web.SecurityFilterChain;
-import io.github.gabrielmmoraes1999.apiservice.util.JwtTokenValidator;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -63,7 +64,7 @@ public class JwtAuthFilter implements Filter {
                     return;
                 }
 
-                String subject = JwtTokenValidator.validateToken(token);
+                String subject = ApplicationContext.getBean(ProviderJwt.class, new ProviderJwt()).checkToken(token);
                 if (subject == null) {
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido");
                     return;

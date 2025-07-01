@@ -3,11 +3,12 @@ package io.github.gabrielmmoraes1999.apiservice.controller;
 import io.github.gabrielmmoraes1999.apiservice.annotation.PostMapping;
 import io.github.gabrielmmoraes1999.apiservice.annotation.RequestHeader;
 import io.github.gabrielmmoraes1999.apiservice.annotation.RestController;
+import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
 import io.github.gabrielmmoraes1999.apiservice.http.HttpStatus;
 import io.github.gabrielmmoraes1999.apiservice.http.ResponseEntity;
+import io.github.gabrielmmoraes1999.apiservice.security.jwt.ProviderJwt;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClient;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClientJDBC;
-import io.github.gabrielmmoraes1999.apiservice.util.JwtTokenValidator;
 
 import java.time.Duration;
 import java.util.*;
@@ -34,7 +35,8 @@ public class OAuth2TokenController {
 
         if (registeredClient != null) {
             Duration accessTokenTimeToLive = registeredClient.getTokenSettings().getAccessTokenTimeToLive();
-            String token = JwtTokenValidator.generateJwtToken(username, accessTokenTimeToLive.getSeconds());
+            String token = ApplicationContext.getBean(ProviderJwt.class, new ProviderJwt())
+                    .generateToken(username, accessTokenTimeToLive.getSeconds());
 
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("access_token", token);

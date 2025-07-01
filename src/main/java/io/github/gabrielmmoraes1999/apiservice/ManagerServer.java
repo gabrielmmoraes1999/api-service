@@ -7,6 +7,7 @@ import io.github.gabrielmmoraes1999.apiservice.annotation.EnableWebSecurity;
 import io.github.gabrielmmoraes1999.apiservice.auth.*;
 import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
 import io.github.gabrielmmoraes1999.apiservice.controller.OAuth2TokenController;
+import io.github.gabrielmmoraes1999.apiservice.security.jwt.ProviderJwt;
 import io.github.gabrielmmoraes1999.apiservice.serializer.ConfigSerializer;
 import io.github.gabrielmmoraes1999.apiservice.security.web.HttpSecurity;
 import io.github.gabrielmmoraes1999.apiservice.security.web.SecurityFilterChain;
@@ -69,6 +70,8 @@ public class ManagerServer extends Server {
             if (Filter.class.isAssignableFrom(clazz)) {
                 FilterHolder filterHolder = new FilterHolder((Filter) configInstance);
                 context.addFilter(filterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+            } else if (ProviderJwt.class.isAssignableFrom(clazz)) {
+                ApplicationContext.addBean(ProviderJwt.class, configInstance);
             }
 
             for (Method method : clazz.getDeclaredMethods()) {

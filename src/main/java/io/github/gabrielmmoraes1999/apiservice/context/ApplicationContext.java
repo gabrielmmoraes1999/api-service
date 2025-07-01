@@ -2,6 +2,7 @@ package io.github.gabrielmmoraes1999.apiservice.context;
 
 import io.github.gabrielmmoraes1999.apiservice.Functions;
 import io.github.gabrielmmoraes1999.apiservice.annotation.Autowired;
+import io.github.gabrielmmoraes1999.apiservice.annotation.Component;
 import io.github.gabrielmmoraes1999.apiservice.annotation.ComponentScan;
 
 import java.util.HashMap;
@@ -39,7 +40,16 @@ public class ApplicationContext {
         }
     }
 
+    public static void addBean(Class<?> clazz, Object object) {
+        ApplicationContext.beans.put(clazz, object);
+    }
+
     public static <T> T getBean(Class<T> clazz) {
         return clazz.cast(beans.get(clazz));
     }
+
+    public static <T> T getBean(Class<T> clazz, Object object) {
+        return clazz.cast(beans.getOrDefault(clazz, object));
+    }
+
 }
