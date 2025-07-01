@@ -11,11 +11,13 @@ import io.github.gabrielmmoraes1999.apiservice.security.jwt.ProviderJwt;
 import io.github.gabrielmmoraes1999.apiservice.serializer.ConfigSerializer;
 import io.github.gabrielmmoraes1999.apiservice.security.web.HttpSecurity;
 import io.github.gabrielmmoraes1999.apiservice.security.web.SecurityFilterChain;
-import org.eclipse.jetty.server.Server;
+import io.github.gabrielmmoraes1999.apiservice.ssl.SslProperties;
+import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -105,6 +107,40 @@ public class ManagerServer extends Server {
                         } else if (classReturn ==  BasicAuthFilter.class) {
                             Object bean = method.invoke(configInstance);
                             context.addFilter(new FilterHolder((BasicAuthFilter) bean), "/*", null);
+                        } else {
+                            method.invoke(configInstance);
+                        }
+                    }
+                }
+            } else {
+                Object configInstance = configClass.getConstructor().newInstance();
+
+                for (Method method : configClass.getDeclaredMethods()) {
+                    if (method.isAnnotationPresent(Bean.class)) {
+                        Class<?> classReturn = method.getReturnType();
+
+                        if (classReturn == SslProperties.class) {
+                            SslProperties sslProperties = (SslProperties) method.invoke(configInstance);
+                            if (sslProperties.isEnabled()) {
+                                SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+                                sslContextFactory.setKeyStorePath(sslProperties.getKeyStorePath());
+                                sslContextFactory.setKeyStorePassword(sslProperties.getKeyStorePassword());
+                                sslContextFactory.setKeyManagerPassword(sslProperties.getKeyPassword());
+
+                                HttpConfiguration httpsConfig = new HttpConfiguration();
+                                httpsConfig.setSecureScheme("https");
+                                httpsConfig.setSecurePort(sslProperties.getPort());
+                                httpsConfig.addCustomizer(new SecureRequestCustomizer());
+
+                                ServerConnector httpsConnector = new ServerConnector(
+                                        this,
+                                        new SslConnectionFactory(sslContextFactory, "http/1.1"),
+                                        new HttpConnectionFactory(httpsConfig)
+                                );
+
+                                httpsConnector.setPort(sslProperties.getPort());
+                                setConnectors(new Connector[]{httpsConnector});
+                            }
                         } else {
                             method.invoke(configInstance);
                         }
