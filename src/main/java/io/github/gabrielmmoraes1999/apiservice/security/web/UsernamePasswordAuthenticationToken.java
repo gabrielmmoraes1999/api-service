@@ -32,4 +32,5 @@ public class UsernamePasswordAuthenticationToken implements Authentication {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return authorities;
     }
+
 }

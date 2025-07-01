@@ -1,10 +1,7 @@
 package io.github.gabrielmmoraes1999.apiservice.auth;
 
 import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
-import io.github.gabrielmmoraes1999.apiservice.security.GrantedAuthority;
-import io.github.gabrielmmoraes1999.apiservice.security.SecurityContextHolder;
-import io.github.gabrielmmoraes1999.apiservice.security.SecurityRule;
-import io.github.gabrielmmoraes1999.apiservice.security.UserDetails;
+import io.github.gabrielmmoraes1999.apiservice.security.*;
 import io.github.gabrielmmoraes1999.apiservice.security.jwt.ProviderJwt;
 import io.github.gabrielmmoraes1999.apiservice.security.web.SecurityFilterChain;
 
@@ -70,7 +67,14 @@ public class JwtAuthFilter implements Filter {
                     return;
                 }
 
-                UserDetails userDetails = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+                if (authentication == null) {
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuário não encontrado");
+                    return;
+                }
+
+                UserDetails userDetails = authentication.getPrincipal();
 
                 if (userDetails == null) {
                     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuário não encontrado");
@@ -88,8 +92,7 @@ public class JwtAuthFilter implements Filter {
                     }
                 }
 
-                // OK
-                //request.setAttribute("userDetails", userDetails);
+                request.setAttribute("userDetails", userDetails);
                 chain.doFilter(req, res);
                 break;
         }

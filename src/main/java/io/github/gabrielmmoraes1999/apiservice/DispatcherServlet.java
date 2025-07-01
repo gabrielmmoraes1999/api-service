@@ -7,6 +7,8 @@ import io.github.gabrielmmoraes1999.apiservice.context.DependencyInjector;
 import io.github.gabrielmmoraes1999.apiservice.http.ResponseEntity;
 import io.github.gabrielmmoraes1999.apiservice.json.JSONObject;
 import io.github.gabrielmmoraes1999.apiservice.serializer.*;
+import io.github.gabrielmmoraes1999.apiservice.utils.ExceptionUtils;
+import io.github.gabrielmmoraes1999.apiservice.utils.Message;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -69,7 +71,7 @@ public class DispatcherServlet extends HttpServlet {
         List<RouteInfo> routeInfos = routes.get(httpMethod);
         if (routeInfos == null) {
             resp.setStatus(405);
-            printWriter.write("{\"error\":\"Método HTTP não suportado\"}");
+            printWriter.write(Message.error("HTTP method not supported"));
             return;
         }
 
@@ -109,16 +111,15 @@ public class DispatcherServlet extends HttpServlet {
                     }
                     return;
                 } catch (Exception ex) {
-                    ex.printStackTrace();
                     resp.setStatus(500);
-                    printWriter.write("{\"error\":\"Erro interno no servidor\"}");
+                    printWriter.write(ExceptionUtils.toJson(ex));
                     return;
                 }
             }
         }
 
         resp.setStatus(404);
-        resp.getWriter().write("{\"error\":\"Rota não encontrada\"}");
+        printWriter.write(Message.error("Route not found"));
     }
 
     private Object invokeMethod(Method method, Object controllerInstance,
@@ -205,7 +206,7 @@ public class DispatcherServlet extends HttpServlet {
                             if (!header.defaultValue().isEmpty()) {
                                 headerValue = header.defaultValue();
                             } else if (header.required()) {
-                                throw new RuntimeException("Header obrigatório ausente: " + name);
+                                throw new RuntimeException("Mandatory header: " + name);
                             }
                         }
 

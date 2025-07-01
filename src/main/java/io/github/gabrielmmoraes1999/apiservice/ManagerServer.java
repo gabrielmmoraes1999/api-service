@@ -7,6 +7,7 @@ import io.github.gabrielmmoraes1999.apiservice.annotation.EnableWebSecurity;
 import io.github.gabrielmmoraes1999.apiservice.auth.*;
 import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
 import io.github.gabrielmmoraes1999.apiservice.controller.OAuth2TokenController;
+import io.github.gabrielmmoraes1999.apiservice.security.crypto.PasswordEncoder;
 import io.github.gabrielmmoraes1999.apiservice.security.jwt.ProviderJwt;
 import io.github.gabrielmmoraes1999.apiservice.serializer.ConfigSerializer;
 import io.github.gabrielmmoraes1999.apiservice.security.web.HttpSecurity;
@@ -141,6 +142,8 @@ public class ManagerServer extends Server {
                                 httpsConnector.setPort(sslProperties.getPort());
                                 setConnectors(new Connector[]{httpsConnector});
                             }
+                        } else if (classReturn == PasswordEncoder.class) {
+                            ApplicationContext.addBean(PasswordEncoder.class, method.invoke(configInstance));
                         } else {
                             method.invoke(configInstance);
                         }

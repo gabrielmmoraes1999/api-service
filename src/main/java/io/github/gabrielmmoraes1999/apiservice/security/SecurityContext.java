@@ -1,6 +1,7 @@
 package io.github.gabrielmmoraes1999.apiservice.security;
 
 public class SecurityContext {
+
     private Authentication authentication;
 
     public Authentication getAuthentication() {

@@ -6,6 +6,7 @@ import io.github.gabrielmmoraes1999.apiservice.security.SecurityRule;
 import java.util.Arrays;
 
 public class PathMatcher {
+
     private final String pattern;
     private final HttpMethod method;
     private final AuthorizationBuilder builder;
@@ -33,5 +34,6 @@ public class PathMatcher {
         }
         return builder;
     }
+
 }
 

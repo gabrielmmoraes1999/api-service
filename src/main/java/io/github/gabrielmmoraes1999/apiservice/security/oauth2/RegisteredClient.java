@@ -1,5 +1,9 @@
 package io.github.gabrielmmoraes1999.apiservice.security.oauth2;
 
+import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
+import io.github.gabrielmmoraes1999.apiservice.security.crypto.PasswordEncoder;
+import io.github.gabrielmmoraes1999.apiservice.security.crypto.md5.Md5PasswordEncoder;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -32,7 +36,7 @@ public class RegisteredClient {
     }
 
     public RegisteredClient clientSecret(String clientSecret) {
-        this.clientSecret = clientSecret;
+        this.clientSecret = ApplicationContext.getBean(PasswordEncoder.class, new Md5PasswordEncoder()).encode(clientSecret);
         return this;
     }
 
@@ -44,6 +48,14 @@ public class RegisteredClient {
     public RegisteredClient tokenSettings(TokenSettings tokenSettings) {
         this.tokenSettings = tokenSettings;
         return this;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public String getClientSecret() {
+        return clientSecret;
     }
 
     public TokenSettings getTokenSettings() {

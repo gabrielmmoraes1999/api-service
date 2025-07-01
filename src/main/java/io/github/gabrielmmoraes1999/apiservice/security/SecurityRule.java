@@ -3,6 +3,7 @@ package io.github.gabrielmmoraes1999.apiservice.security;
 import java.util.List;
 
 public class SecurityRule {
+
     public enum AccessType { PERMIT_ALL, AUTHENTICATED, HAS_ROLE }
 
     private final String pathPattern;
@@ -28,5 +29,6 @@ public class SecurityRule {
     public List<String> getRoles() {
         return roles;
     }
+
 }
 

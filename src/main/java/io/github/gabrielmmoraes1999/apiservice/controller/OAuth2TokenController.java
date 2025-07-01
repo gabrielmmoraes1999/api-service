@@ -6,6 +6,8 @@ import io.github.gabrielmmoraes1999.apiservice.annotation.RestController;
 import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
 import io.github.gabrielmmoraes1999.apiservice.http.HttpStatus;
 import io.github.gabrielmmoraes1999.apiservice.http.ResponseEntity;
+import io.github.gabrielmmoraes1999.apiservice.security.crypto.PasswordEncoder;
+import io.github.gabrielmmoraes1999.apiservice.security.crypto.md5.Md5PasswordEncoder;
 import io.github.gabrielmmoraes1999.apiservice.security.jwt.ProviderJwt;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClient;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClientJDBC;
@@ -29,21 +31,25 @@ public class OAuth2TokenController {
         if (parts.length != 2)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED, "Invalid auth");
 
-        String username = parts[0];
-        String password = parts[1];
-        RegisteredClient registeredClient = RegisteredClientJDBC.findByClientIdAndClientSecret(username, password);
+        RegisteredClient registeredClient = RegisteredClientJDBC.findByClientId(parts[0]);
 
         if (registeredClient != null) {
-            Duration accessTokenTimeToLive = registeredClient.getTokenSettings().getAccessTokenTimeToLive();
-            String token = ApplicationContext.getBean(ProviderJwt.class, new ProviderJwt())
-                    .generateToken(username, accessTokenTimeToLive.getSeconds());
+            if (ApplicationContext.getBean(PasswordEncoder.class, new Md5PasswordEncoder())
+                    .matches(parts[1], registeredClient.getClientSecret())) {
 
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("access_token", token);
-            response.put("token_type", "Bearer");
-            response.put("expires_in", accessTokenTimeToLive.getSeconds());
+                Duration accessTokenTimeToLive = registeredClient.getTokenSettings().getAccessTokenTimeToLive();
+                ProviderJwt providerJwt = ApplicationContext.getBean(ProviderJwt.class, new ProviderJwt());
+                String token = providerJwt.generateToken(registeredClient.getId(), accessTokenTimeToLive.getSeconds());
 
-            return ResponseEntity.ok(response);
+                Map<String, Object> response = new LinkedHashMap<>();
+                response.put("access_token", token);
+                response.put("token_type", "Bearer");
+                response.put("expires_in", accessTokenTimeToLive.getSeconds());
+
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+            }
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }

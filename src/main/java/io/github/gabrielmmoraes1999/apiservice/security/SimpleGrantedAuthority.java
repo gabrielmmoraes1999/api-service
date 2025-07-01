@@ -9,6 +9,7 @@ public final class SimpleGrantedAuthority implements GrantedAuthority {
         this.role = role;
     }
 
+    @Override
     public String getAuthority() {
         return this.role;
     }
@@ -21,11 +22,14 @@ public final class SimpleGrantedAuthority implements GrantedAuthority {
         }
     }
 
+    @Override
     public int hashCode() {
         return this.role.hashCode();
     }
 
+    @Override
     public String toString() {
         return this.role;
     }
+
 }
