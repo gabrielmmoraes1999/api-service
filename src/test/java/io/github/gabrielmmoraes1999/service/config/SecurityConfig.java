@@ -23,6 +23,7 @@ public class SecurityConfig {
         return httpSecurity.authorizeHttpRequests(auth -> auth
                 .antMatchers("/api/user/**").hasAnyRole(UserRole.ADMIN.name())
                 .antMatchers("/api/client/**").hasAnyRole(UserRole.ADMIN.name())
+                .antMatchers(HttpMethod.GET, "/api/client/**").hasAnyRole(UserRole.USER.name())
                 .antMatchers(HttpMethod.POST, "/api/client/**").hasAnyRole(UserRole.USER.name())
                 .anyRequest()
                 .authenticated()
