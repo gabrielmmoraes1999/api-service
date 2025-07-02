@@ -26,16 +26,16 @@ public class OAuth2TokenController {
 
         String base64Credentials = authHeader.substring("Basic ".length());
         String credentials = new String(Base64.getDecoder().decode(base64Credentials));
-        String[] parts = credentials.split(":", 2);
+        String[] usernameAndPassword = credentials.split(":", 2);
 
-        if (parts.length != 2)
+        if (usernameAndPassword.length != 2)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED, "Invalid auth");
 
-        RegisteredClient registeredClient = RegisteredClientJDBC.findByClientId(parts[0]);
+        RegisteredClient registeredClient = RegisteredClientJDBC.findByClientId(usernameAndPassword[0]);
 
         if (registeredClient != null) {
             if (ApplicationContext.getBean(PasswordEncoder.class, new Md5PasswordEncoder())
-                    .matches(parts[1], registeredClient.getClientSecret())) {
+                    .matches(usernameAndPassword[1], registeredClient.getClientSecret())) {
 
                 Duration accessTokenTimeToLive = registeredClient.getTokenSettings().getAccessTokenTimeToLive();
                 ProviderJwt providerJwt = ApplicationContext.getBean(ProviderJwt.class, new ProviderJwt());

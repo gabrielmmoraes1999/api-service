@@ -11,4 +11,5 @@ public class SecurityContext {
     public void setAuthentication(Authentication authentication) {
         this.authentication = authentication;
     }
+
 }

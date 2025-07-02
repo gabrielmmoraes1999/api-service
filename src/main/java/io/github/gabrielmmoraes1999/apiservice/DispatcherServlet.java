@@ -99,15 +99,22 @@ public class DispatcherServlet extends HttpServlet {
 
                             Object body = entity.getBody();
                             if (body instanceof String) {
+                                resp.setContentType("application/text;charset=UTF-8");
                                 printWriter.write((String) body);
                             } else {
+                                resp.setContentType("application/json;charset=UTF-8");
                                 printWriter.write(objectMapper.writeValueAsString(body));
                             }
                         } else if (result instanceof String) {
+                            resp.setContentType("application/text;charset=UTF-8");
                             printWriter.write((String) result);
                         } else {
+                            resp.setContentType("application/json;charset=UTF-8");
                             printWriter.write(objectMapper.writeValueAsString(result));
                         }
+                    } else {
+                        resp.setContentType("application/json;charset=UTF-8");
+                        printWriter.write("{}");
                     }
                     return;
                 } catch (Exception ex) {

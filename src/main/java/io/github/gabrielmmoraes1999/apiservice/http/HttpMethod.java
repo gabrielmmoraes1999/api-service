@@ -28,4 +28,5 @@ public enum HttpMethod {
             mappings.put(httpMethod.name(), httpMethod);
         }
     }
+
 }
