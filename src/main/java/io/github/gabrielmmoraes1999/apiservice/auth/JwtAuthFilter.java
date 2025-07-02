@@ -9,8 +9,9 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class JwtAuthFilter implements Filter {
 
@@ -41,61 +42,59 @@ public class JwtAuthFilter implements Filter {
             return;
         }
 
-        Optional<SecurityRule> ruleOpt = SecurityFilterChain.getRule(path, method);
+        if (SecurityFilterChain.getRule(path, method, SecurityRule.AccessType.PERMIT_ALL).isPresent()) {
+            chain.doFilter(req, res);
+            return;
+        }
 
-        if (!ruleOpt.isPresent()) {
+        List<SecurityRule> ruleList = SecurityFilterChain.getListRule(path, method, SecurityRule.AccessType.HAS_ROLE);
+
+        if (ruleList.isEmpty()) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Acesso negado");
             return;
         }
 
-        SecurityRule rule = ruleOpt.get();
-        switch (rule.getAccessType()) {
-            case PERMIT_ALL:
-                chain.doFilter(req, res);
-                return;
-            case AUTHENTICATED:
-            case HAS_ROLE:
-                String token = recoverToken(request);
-                if (token == null) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token ausente");
-                    return;
-                }
+        List<String> accessTypeList = ruleList.stream()
+                .flatMap(rule-> rule.getRoles().stream())
+                .collect(Collectors.toList());
 
-                String subject = ApplicationContext.getBean(ProviderJwt.class, new ProviderJwt()).checkToken(token);
-                if (subject == null) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido");
-                    return;
-                }
-
-                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-                if (authentication == null) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuário não encontrado");
-                    return;
-                }
-
-                UserDetails userDetails = authentication.getPrincipal();
-
-                if (userDetails == null) {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuário não encontrado");
-                    return;
-                }
-
-                if (rule.getAccessType() == SecurityRule.AccessType.HAS_ROLE) {
-                    boolean hasRole = userDetails.getAuthorities().stream()
-                            .map(GrantedAuthority::getAuthority)
-                            .anyMatch(rule.getRoles()::contains);
-
-                    if (!hasRole) {
-                        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Permissão negada");
-                        return;
-                    }
-                }
-
-                request.setAttribute("userDetails", userDetails);
-                chain.doFilter(req, res);
-                break;
+        String token = recoverToken(request);
+        if (token == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token ausente");
+            return;
         }
+
+        String subject = ApplicationContext.getBean(ProviderJwt.class, new ProviderJwt()).checkToken(token);
+        if (subject == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido");
+            return;
+        }
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuário não encontrado");
+            return;
+        }
+
+        UserDetails userDetails = authentication.getPrincipal();
+
+        if (userDetails == null) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuário não encontrado");
+            return;
+        }
+
+        boolean hasRole = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(accessTypeList::contains);
+
+        if (!hasRole) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Permissão negada");
+            return;
+        }
+
+        request.setAttribute("userDetails", userDetails);
+        chain.doFilter(req, res);
     }
 
     private String recoverToken(HttpServletRequest request) {
