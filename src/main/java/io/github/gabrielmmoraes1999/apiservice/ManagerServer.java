@@ -124,7 +124,7 @@ public class ManagerServer extends Server {
                             SslProperties sslProperties = (SslProperties) method.invoke(configInstance);
                             if (sslProperties.isEnabled()) {
                                 SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-                                sslContextFactory.setKeyStorePath(sslProperties.getKeyStorePath());
+                                sslContextFactory.setKeyStore(sslProperties.getKeyStore());
                                 sslContextFactory.setKeyStorePassword(sslProperties.getKeyStorePassword());
                                 sslContextFactory.setKeyManagerPassword(sslProperties.getKeyPassword());
 
