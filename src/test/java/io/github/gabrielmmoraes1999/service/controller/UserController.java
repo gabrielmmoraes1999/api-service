@@ -3,54 +3,56 @@ package io.github.gabrielmmoraes1999.service.controller;
 import io.github.gabrielmmoraes1999.apiservice.annotation.*;
 import io.github.gabrielmmoraes1999.apiservice.http.ResponseEntity;
 import io.github.gabrielmmoraes1999.apiservice.http.HttpStatus;
-import io.github.gabrielmmoraes1999.apiservice.security.Authentication;
-import io.github.gabrielmmoraes1999.apiservice.security.SecurityContextHolder;
-import io.github.gabrielmmoraes1999.service.entity.Login;
+import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClient;
+import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClientJDBC;
+import io.github.gabrielmmoraes1999.apiservice.security.oauth2.TokenSettings;
+import io.github.gabrielmmoraes1999.db.Repository;
 import io.github.gabrielmmoraes1999.service.entity.User;
-import io.github.gabrielmmoraes1999.service.service.UserService;
+import io.github.gabrielmmoraes1999.service.repository.UserRepository;
 
-import javax.servlet.http.HttpServletRequest;
+import java.time.Duration;
 import java.util.*;
 
 @RestController("/api")
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    private final UserRepository userRepository = Repository.createRepository(UserRepository.class);
 
-    @GetMapping("/users/{id}")
-    public User getUser(@PathVariable("id") int id) {
-        return userService.findById(id);
+    @PostMapping("/user")
+    public ResponseEntity<Object> create(@RequestBody User user) {
+        user.setUuid(UUID.randomUUID().toString());
+
+        RegisteredClient registeredClient = RegisteredClient
+                .withId(user.getUuid())
+                .clientId(user.getUsername())
+                .clientName(user.getName())
+                .clientSecret(user.getPassword())
+                .tokenSettings(TokenSettings.builder()
+                        .accessTokenTimeToLive(Duration.ofHours(6))
+                        .build())
+                .build();
+
+        user.setPassword(registeredClient.getClientSecret());
+
+        RegisteredClientJDBC.save(registeredClient);
+        return new ResponseEntity<>(userRepository.save(user), HttpStatus.CREATED);
     }
 
-    @PostMapping("/users")
-    public ResponseEntity<Object> createUser(@RequestBody User user, HttpServletRequest request) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        Login login = (Login) authentication.getPrincipal();
-        System.out.println(login.getUuid());
-        return new ResponseEntity<>(userService.save(user), HttpStatus.CREATED);
+    @GetMapping("/user/{uuid}")
+    public User findById(@PathVariable("uuid") String uuid) {
+        return userRepository.findById(uuid);
     }
 
-    @PutMapping("/users/{id}")
-    public ResponseEntity<Object> updateUser(@RequestBody User user) {
-        return new ResponseEntity<>(userService.save(user), HttpStatus.ACCEPTED);
+    @PutMapping("/user")
+    public ResponseEntity<Object> update(@RequestBody User login) {
+        return new ResponseEntity<>(userRepository.save(login), HttpStatus.ACCEPTED);
     }
 
-    @DeleteMapping("/users/{id}")
-    public ResponseEntity<Object> deleteUser(@PathVariable("id") int id) {
-        userService.delete(id);
+    @DeleteMapping("/user/{uuid}")
+    public ResponseEntity<Object> delete(@PathVariable("uuid") String uuid) {
+        userRepository.delete(uuid);
+        RegisteredClientJDBC.delete(uuid);
         return new ResponseEntity<>("Registro excluído com sucesso!", HttpStatus.NO_CONTENT);
-    }
-
-    @GetMapping("/search")
-    public List<User> searchUsers(@RequestParam("name") String name) {
-        List<User> result = new ArrayList<>();
-        for (User u : userService.getUsers()) {
-            if (u.getName() != null && u.getName().toLowerCase().contains(name.toLowerCase())) {
-                result.add(u);
-            }
-        }
-        return result;
     }
 
 }
