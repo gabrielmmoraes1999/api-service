@@ -1,5 +1,5 @@
 # api-service [![MIT License](https://img.shields.io/github/license/gabrielmmoraes1999/api-service.svg) ](https://github.com/gabrielmmoraes1999/api-service/blob/main/LICENSE) [![Maven Central](https://img.shields.io/maven-central/v/io.github.gabrielmmoraes1999/api-service.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.gabrielmmoraes1999/DBRepository)
-Biblioteca Java para manipulação de banco de dados.
+Biblioteca Java para criação de api.
 
 Importação da biblioteca:
 - Maven :
@@ -7,7 +7,7 @@ Importação da biblioteca:
 <dependency>
     <groupId>io.github.gabrielmmoraes1999</groupId>
     <artifactId>api-service</artifactId>
-    <version>1.1.2</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
