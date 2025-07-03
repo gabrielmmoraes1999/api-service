@@ -15,7 +15,7 @@ public class DateSqlDeserializer extends JsonDeserializer<Date> {
         String dateStr = jsonParser.getText().trim();
 
         try {
-            return new Date(ConfigSerializer.SDF_TIMESTAMP.parse(dateStr).getTime());
+            return new Date(ConfigSerializer.SDF_DATE.parse(dateStr).getTime());
         } catch (ParseException e) {
             throw new RuntimeException("Format invalid to Date: " + dateStr, e);
         }
