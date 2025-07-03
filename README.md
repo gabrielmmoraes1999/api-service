@@ -17,6 +17,9 @@ ________________________________________________________________________________
 
 # Histórico de Versões
 
+## v1.2.0 - 23/06/2025
+- Adicionado suporte a autenticação OAuth2.
+
 ## v1.1.2 - 23/06/2025
 - Adicionado baseClass no ComponentScan para poder informar as classes de forma manual.
 
