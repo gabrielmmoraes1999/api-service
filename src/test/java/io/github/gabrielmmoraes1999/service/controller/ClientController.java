@@ -7,7 +7,8 @@ import io.github.gabrielmmoraes1999.db.Repository;
 import io.github.gabrielmmoraes1999.service.entity.Client;
 import io.github.gabrielmmoraes1999.service.repository.ClientRepository;
 
-@RestController("/api")
+@RestController
+@RequestMapping("/api")
 public class ClientController {
 
     private final ClientRepository clientRepository = Repository.createRepository(ClientRepository.class);

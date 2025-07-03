@@ -246,11 +246,15 @@ public class DispatcherServlet extends HttpServlet {
     }
 
     public void addRestController(Class<?> controller) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException, ServletException {
-        RestController restController = controller.getAnnotation(RestController.class);
         Object controllerInstance = controller.getConstructor().newInstance();
         DependencyInjector.injectAutowiredDependencies(controllerInstance);
+        String basePath = "";
 
-        String basePath = restController.value();
+        if (controller.isAnnotationPresent(RequestMapping.class)) {
+            RequestMapping requestMapping = controller.getAnnotation(RequestMapping.class);
+            basePath = requestMapping.value();
+        }
+
         if (!basePath.startsWith("/")) basePath = "/" + basePath;
         if (basePath.endsWith("/")) basePath = basePath.substring(0, basePath.length() - 1);
 

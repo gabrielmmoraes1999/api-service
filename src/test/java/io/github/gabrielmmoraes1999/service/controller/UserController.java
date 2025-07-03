@@ -13,7 +13,8 @@ import io.github.gabrielmmoraes1999.service.repository.UserRepository;
 import java.time.Duration;
 import java.util.*;
 
-@RestController("/api")
+@RestController
+@RequestMapping("/api")
 public class UserController {
 
     private final UserRepository userRepository = Repository.createRepository(UserRepository.class);
