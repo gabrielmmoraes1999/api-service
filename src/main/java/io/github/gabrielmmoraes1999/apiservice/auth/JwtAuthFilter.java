@@ -4,6 +4,7 @@ import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
 import io.github.gabrielmmoraes1999.apiservice.security.*;
 import io.github.gabrielmmoraes1999.apiservice.security.jwt.ProviderJwt;
 import io.github.gabrielmmoraes1999.apiservice.security.web.SecurityFilterChain;
+import io.github.gabrielmmoraes1999.apiservice.utils.Message;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -60,27 +61,28 @@ public class JwtAuthFilter implements Filter {
 
         String token = recoverToken(request);
         if (token == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token ausente");
+            //response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token away");
+            Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "Token away");
             return;
         }
 
         String subject = ApplicationContext.getBean(ProviderJwt.class, new ProviderJwt()).checkToken(token);
         if (subject == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token inválido");
+            Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "Token invalid");
             return;
         }
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuário não encontrado");
+            Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "User not found");
             return;
         }
 
         UserDetails userDetails = authentication.getPrincipal();
 
         if (userDetails == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuário não encontrado");
+            Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "User not found");
             return;
         }
 
@@ -89,7 +91,7 @@ public class JwtAuthFilter implements Filter {
                 .anyMatch(accessTypeList::contains);
 
         if (!hasRole) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Permissão negada");
+            Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "Permission denied");
             return;
         }
 

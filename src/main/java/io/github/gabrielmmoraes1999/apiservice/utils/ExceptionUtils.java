@@ -15,7 +15,7 @@ public class ExceptionUtils {
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
             return mapper.writeValueAsString(new ExceptionResponse(ex));
         } catch (Exception e) {
-            return Message.error("Failed to serialize exception");
+            return Message.error("Failed to serialize exception").toString();
         }
     }
 

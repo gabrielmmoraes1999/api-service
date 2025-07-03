@@ -11,6 +11,7 @@ import io.github.gabrielmmoraes1999.apiservice.security.crypto.md5.Md5PasswordEn
 import io.github.gabrielmmoraes1999.apiservice.security.jwt.ProviderJwt;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClient;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClientJDBC;
+import io.github.gabrielmmoraes1999.apiservice.utils.Message;
 
 import java.time.Duration;
 import java.util.*;
@@ -21,7 +22,7 @@ public class OAuth2TokenController {
     @PostMapping("/oauth2/token")
     public ResponseEntity<?> getToken(@RequestHeader("Authorization") String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Basic ")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED, "Missing Authorization Header");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED, Message.error("Missing Authorization Header"));
         }
 
         String base64Credentials = authHeader.substring("Basic ".length());
@@ -29,7 +30,7 @@ public class OAuth2TokenController {
         String[] usernameAndPassword = credentials.split(":", 2);
 
         if (usernameAndPassword.length != 2)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED, "Invalid auth");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED, Message.error("Invalid auth"));
 
         RegisteredClient registeredClient = RegisteredClientJDBC.findByClientId(usernameAndPassword[0]);
 
@@ -48,10 +49,10 @@ public class OAuth2TokenController {
 
                 return ResponseEntity.ok(response);
             } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED, Message.error("Invalid credentials"));
             }
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED, Message.error("Invalid credentials"));
         }
     }
 

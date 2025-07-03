@@ -71,7 +71,7 @@ public class DispatcherServlet extends HttpServlet {
         List<RouteInfo> routeInfos = routes.get(httpMethod);
         if (routeInfos == null) {
             resp.setStatus(405);
-            printWriter.write(Message.error("HTTP method not supported"));
+            printWriter.write(Message.error("HTTP method not supported").toString());
             return;
         }
 
@@ -101,6 +101,9 @@ public class DispatcherServlet extends HttpServlet {
                             if (body instanceof String) {
                                 resp.setContentType("application/text;charset=UTF-8");
                                 printWriter.write((String) body);
+                            } else if (body instanceof JSONObject) {
+                                resp.setContentType("application/json;charset=UTF-8");
+                                printWriter.write(body.toString());
                             } else {
                                 resp.setContentType("application/json;charset=UTF-8");
                                 printWriter.write(objectMapper.writeValueAsString(body));
@@ -108,6 +111,9 @@ public class DispatcherServlet extends HttpServlet {
                         } else if (result instanceof String) {
                             resp.setContentType("application/text;charset=UTF-8");
                             printWriter.write((String) result);
+                        } else if (result instanceof JSONObject) {
+                            resp.setContentType("application/json;charset=UTF-8");
+                            printWriter.write(result.toString());
                         } else {
                             resp.setContentType("application/json;charset=UTF-8");
                             printWriter.write(objectMapper.writeValueAsString(result));
@@ -126,7 +132,7 @@ public class DispatcherServlet extends HttpServlet {
         }
 
         resp.setStatus(404);
-        printWriter.write(Message.error("Route not found"));
+        printWriter.write(Message.error("Route not found").toString());
     }
 
     private Object invokeMethod(Method method, Object controllerInstance,
