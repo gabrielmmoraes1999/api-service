@@ -1,9 +1,6 @@
 package io.github.gabrielmmoraes1999.apiservice;
 
-import io.github.gabrielmmoraes1999.apiservice.annotation.Bean;
-import io.github.gabrielmmoraes1999.apiservice.annotation.Component;
-import io.github.gabrielmmoraes1999.apiservice.annotation.Configuration;
-import io.github.gabrielmmoraes1999.apiservice.annotation.EnableWebSecurity;
+import io.github.gabrielmmoraes1999.apiservice.annotation.*;
 import io.github.gabrielmmoraes1999.apiservice.auth.*;
 import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
 import io.github.gabrielmmoraes1999.apiservice.controller.OAuth2TokenController;
@@ -13,6 +10,9 @@ import io.github.gabrielmmoraes1999.apiservice.serializer.ConfigSerializer;
 import io.github.gabrielmmoraes1999.apiservice.security.web.HttpSecurity;
 import io.github.gabrielmmoraes1999.apiservice.security.web.SecurityFilterChain;
 import io.github.gabrielmmoraes1999.apiservice.ssl.SslProperties;
+import io.github.gabrielmmoraes1999.apiservice.websocket.annotation.WebSocketConfigurer;
+import io.github.gabrielmmoraes1999.apiservice.websocket.model.WebSocketHandlerRegistrationImpl;
+import io.github.gabrielmmoraes1999.apiservice.websocket.model.WebSocketHandlerRegistryImpl;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -85,9 +85,9 @@ public class ManagerServer extends Server {
         }
 
         for (Class<?> configClass : Functions.getClassesWithAnnotation(Configuration.class)) {
-            if (configClass.isAnnotationPresent(EnableWebSecurity.class)) {
-                Object configInstance = configClass.getConstructor().newInstance();
+            Object configInstance = configClass.getConstructor().newInstance();
 
+            if (configClass.isAnnotationPresent(EnableWebSecurity.class)) {
                 for (Method method : configClass.getDeclaredMethods()) {
                     if (method.isAnnotationPresent(Bean.class)) {
                         Class<?> classReturn = method.getReturnType();
@@ -113,9 +113,11 @@ public class ManagerServer extends Server {
                         }
                     }
                 }
+            } else if (configClass.isAnnotationPresent(EnableWebSocket.class)) {
+                if (WebSocketConfigurer.class.isAssignableFrom(configClass)) {
+                    setWebSocketConfigurer((WebSocketConfigurer) configInstance, context);
+                }
             } else {
-                Object configInstance = configClass.getConstructor().newInstance();
-
                 for (Method method : configClass.getDeclaredMethods()) {
                     if (method.isAnnotationPresent(Bean.class)) {
                         Class<?> classReturn = method.getReturnType();
@@ -155,4 +157,9 @@ public class ManagerServer extends Server {
         setHandler(context);
     }
 
+    private void setWebSocketConfigurer(WebSocketConfigurer webSocketConfigurer, ServletContextHandler servletContextHandler) {
+        WebSocketHandlerRegistrationImpl registration = new WebSocketHandlerRegistrationImpl(servletContextHandler);
+        WebSocketHandlerRegistryImpl registry = new WebSocketHandlerRegistryImpl(registration);
+        webSocketConfigurer.registerWebSocketHandlers(registry);
+    }
 }
