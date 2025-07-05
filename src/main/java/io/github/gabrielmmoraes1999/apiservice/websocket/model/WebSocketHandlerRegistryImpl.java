@@ -13,8 +13,8 @@ public class WebSocketHandlerRegistryImpl implements WebSocketHandlerRegistry {
     }
 
     @Override
-    public WebSocketHandlerRegistration addHandler(WebSocketHandler webSocketHandler, String paths) {
-        return registration.addHandler(webSocketHandler, paths);
+    public WebSocketHandlerRegistration addHandler(WebSocketHandler webSocketHandler, String path) {
+        return registration.addHandler(webSocketHandler, path);
     }
 
 }
