@@ -36,6 +36,7 @@ public class WebSocketServletImpl extends WebSocketServlet {
             }
 
             if (byPass) {
+                attributes.forEach(req::setAttribute);
                 super.service(req, resp);
             }
 

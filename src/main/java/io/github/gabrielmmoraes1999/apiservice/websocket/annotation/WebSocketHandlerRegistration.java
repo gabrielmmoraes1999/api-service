@@ -9,9 +9,9 @@ public interface WebSocketHandlerRegistration {
 
     WebSocketHandlerRegistration addInterceptor(HandshakeInterceptor interceptor);
 
-    WebSocketHandlerRegistration setAllowedOrigins(String... origins);
+    //WebSocketHandlerRegistration setAllowedOrigins(String... origins);
 
-    WebSocketHandlerRegistration setAllowedOriginPatterns(String... originPatterns);
+    //WebSocketHandlerRegistration setAllowedOriginPatterns(String... originPatterns);
 
     //SockJsServiceRegistration withSockJS();
 }

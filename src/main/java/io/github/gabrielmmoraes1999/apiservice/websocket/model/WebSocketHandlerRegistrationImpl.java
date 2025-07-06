@@ -38,14 +38,4 @@ public class WebSocketHandlerRegistrationImpl implements WebSocketHandlerRegistr
         return this;
     }
 
-    @Override
-    public WebSocketHandlerRegistration setAllowedOrigins(String... origins) {
-        return this;
-    }
-
-    @Override
-    public WebSocketHandlerRegistration setAllowedOriginPatterns(String... originPatterns) {
-        return this;
-    }
-
 }
