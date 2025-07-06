@@ -7,7 +7,7 @@ public interface WebSocketHandlerRegistration {
 
     //WebSocketHandlerRegistration setHandshakeHandler(HandshakeHandler handshakeHandler);
 
-    //WebSocketHandlerRegistration addInterceptors(HandshakeInterceptor... interceptors);
+    WebSocketHandlerRegistration addInterceptor(HandshakeInterceptor interceptor);
 
     WebSocketHandlerRegistration setAllowedOrigins(String... origins);
 
