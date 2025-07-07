@@ -119,6 +119,28 @@ public class RegisteredClientJDBC {
         }
     }
 
+    public static void updateClientId(String clientId, String id) {
+        String sql = "update oauth2_registered_client set client_id = ? where id = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setString(1, clientId);
+            preparedStatement.setString(2, id);
+            preparedStatement.execute();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void updateClientSecret(String clientSecret, String id) {
+        String sql = "update oauth2_registered_client set client_secret = ? where id = ?";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+            preparedStatement.setString(1, clientSecret);
+            preparedStatement.setString(2, id);
+            preparedStatement.execute();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static void delete(String uuid) {
         String sql = "delete from oauth2_registered_client where id = ?";
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
