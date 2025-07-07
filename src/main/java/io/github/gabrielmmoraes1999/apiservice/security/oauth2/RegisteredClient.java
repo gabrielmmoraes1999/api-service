@@ -36,7 +36,7 @@ public class RegisteredClient {
     }
 
     public RegisteredClient clientSecret(String clientSecret) {
-        this.clientSecret = ApplicationContext.getBean(PasswordEncoder.class, new Md5PasswordEncoder()).encode(clientSecret);
+        this.clientSecret = getClientSecret(clientSecret);
         return this;
     }
 
@@ -78,6 +78,10 @@ public class RegisteredClient {
         }
 
         return this;
+    }
+
+    public static String getClientSecret(String clientSecret) {
+        return ApplicationContext.getBean(PasswordEncoder.class, new Md5PasswordEncoder()).encode(clientSecret);
     }
 
 }
