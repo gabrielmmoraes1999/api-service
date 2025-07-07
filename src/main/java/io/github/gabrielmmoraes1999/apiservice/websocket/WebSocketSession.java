@@ -101,4 +101,8 @@ public class WebSocketSession implements Session {
         return httpRequest.getAttribute(s);
     }
 
+    public void sendMessage(String message) throws IOException {
+        delegate.getRemote().sendString(message);
+    }
+
 }
