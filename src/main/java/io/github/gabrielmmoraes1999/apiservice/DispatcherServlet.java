@@ -1,5 +1,6 @@
 package io.github.gabrielmmoraes1999.apiservice;
 
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.github.gabrielmmoraes1999.apiservice.annotation.*;
@@ -18,9 +19,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.regex.Matcher;
 
@@ -161,6 +160,22 @@ public class DispatcherServlet extends HttpServlet {
                         }
 
                         args[i] = new JSONObject(sb.toString());
+                    } else if (List.class.isAssignableFrom(p.getType())) {
+                        Type genericType = p.getParameterizedType();
+
+                        if (genericType instanceof ParameterizedType) {
+                            ParameterizedType parameterizedType = (ParameterizedType) genericType;
+
+                            Type actualType = parameterizedType.getActualTypeArguments()[0];
+                            Class<?> listElementClass = Class.forName(actualType.getTypeName());
+
+                            JavaType javaType = objectMapper.getTypeFactory()
+                                    .constructCollectionType(List.class, listElementClass);
+
+                            args[i] = objectMapper.readValue(req.getReader(), javaType);
+                        } else {
+                            args[i] = objectMapper.readValue(req.getReader(), List.class);
+                        }
                     } else {
                         args[i] = objectMapper.readValue(req.getReader(), p.getType());
                     }
