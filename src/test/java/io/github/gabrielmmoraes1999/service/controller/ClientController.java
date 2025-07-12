@@ -35,7 +35,7 @@ public class ClientController {
 
     @DeleteMapping("/client/{id}")
     public ResponseEntity<Object> delete(@PathVariable("uuid") Integer id) {
-        clientRepository.delete(id);
+        clientRepository.deleteById(id);
         return new ResponseEntity<>("Registro excluído com sucesso!", HttpStatus.NO_CONTENT);
     }
 

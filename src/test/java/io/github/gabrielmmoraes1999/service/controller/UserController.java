@@ -51,7 +51,7 @@ public class UserController {
 
     @DeleteMapping("/user/{uuid}")
     public ResponseEntity<Object> delete(@PathVariable("uuid") String uuid) {
-        userRepository.delete(uuid);
+        userRepository.deleteById(uuid);
         RegisteredClientJDBC.delete(uuid);
         return new ResponseEntity<>("Registro excluído com sucesso!", HttpStatus.NO_CONTENT);
     }
