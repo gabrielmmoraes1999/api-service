@@ -7,7 +7,7 @@ Importação da biblioteca:
 <dependency>
     <groupId>io.github.gabrielmmoraes1999</groupId>
     <artifactId>api-service</artifactId>
-    <version>1.2.1</version>
+    <version>2.0.0</version>
 </dependency>
 ```
 
@@ -16,6 +16,10 @@ Veja a Wiki https://github.com/gabrielmmoraes1999/api-service/wiki, para ter um 
 ________________________________________________________________________________________________
 
 # Histórico de Versões
+
+## v2.0.0 - 12/07/2025
+- Adicionado suporte a `WebSocket`.
+- Melhorias na estrutura do código.
 
 ## v1.2.1 - 03/07/2025
 - Corrigido bug no tratamento de campo do tipo `java.sql.Date`.
