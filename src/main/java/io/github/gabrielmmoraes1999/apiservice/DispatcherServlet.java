@@ -2,7 +2,6 @@ package io.github.gabrielmmoraes1999.apiservice;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.github.gabrielmmoraes1999.apiservice.annotation.*;
 import io.github.gabrielmmoraes1999.apiservice.context.DependencyInjector;
 import io.github.gabrielmmoraes1999.apiservice.http.ResponseEntity;
@@ -38,15 +37,7 @@ public class DispatcherServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         try {
-            SimpleModule simpleModule = new SimpleModule();
-            simpleModule.addSerializer(java.sql.Date.class, new DateSqlSerializer());
-            simpleModule.addSerializer(java.time.LocalDateTime.class, new LocalDateTimeSerializer());
-            simpleModule.addSerializer(java.sql.Timestamp.class, new TimestampSerializer());
-
-            simpleModule.addDeserializer(java.sql.Date.class, new DateSqlDeserializer());
-            simpleModule.addDeserializer(java.time.LocalDateTime.class, new LocalDateTimeDeserializer());
-            simpleModule.addDeserializer(java.sql.Timestamp.class, new TimestampDeserializer());
-            objectMapper.registerModule(simpleModule);
+            objectMapper.registerModule(ConfigSerializer.getSimpleModule());
 
             for (Class<?> controller : Functions.getClassesWithAnnotation(RestController.class)) {
                 addRestController(controller);

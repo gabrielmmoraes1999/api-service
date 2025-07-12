@@ -1,9 +1,11 @@
 package io.github.gabrielmmoraes1999.apiservice.context;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gabrielmmoraes1999.apiservice.Functions;
 import io.github.gabrielmmoraes1999.apiservice.annotation.Autowired;
 import io.github.gabrielmmoraes1999.apiservice.annotation.Component;
 import io.github.gabrielmmoraes1999.apiservice.annotation.ComponentScan;
+import io.github.gabrielmmoraes1999.apiservice.serializer.ConfigSerializer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -33,7 +35,13 @@ public class ApplicationContext {
     public static void init() {
         for (Class<?> clazz : Functions.getClassesWithAnnotationPresent(Autowired.class)) {
             try {
-                beans.put(clazz, clazz.getDeclaredConstructor().newInstance());
+                Object bean = clazz.getDeclaredConstructor().newInstance();
+
+                if (bean instanceof ObjectMapper) {
+                    ((ObjectMapper) bean).registerModule(ConfigSerializer.getSimpleModule());
+                }
+
+                beans.put(clazz, bean);
             } catch (Exception e) {
                 throw new RuntimeException("Error instance bean: " + clazz.getName(), e);
             }

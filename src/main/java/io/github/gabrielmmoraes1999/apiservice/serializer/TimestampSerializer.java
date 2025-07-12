@@ -17,4 +17,5 @@ public class TimestampSerializer extends StdSerializer<Timestamp> {
     public void serialize(Timestamp timestamp, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
         jsonGenerator.writeString(ConfigSerializer.SDF_TIMESTAMP.format(timestamp));
     }
+
 }

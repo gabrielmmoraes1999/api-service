@@ -24,4 +24,5 @@ public class TimestampDeserializer extends JsonDeserializer<Timestamp> {
             throw new RuntimeException("Format invalid to Timestamp: " + dateStr, e);
         }
     }
+
 }
