@@ -21,6 +21,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain authFilterChain(HttpSecurity httpSecurity) {
         return httpSecurity.authorizeHttpRequests(auth -> auth
+                .antMatchers("/websocket/**").hasAnyRole(UserRole.ADMIN.name())
                 .antMatchers("/api/user/**").hasAnyRole(UserRole.ADMIN.name())
                 .antMatchers("/api/client/**").hasAnyRole(UserRole.ADMIN.name())
                 .antMatchers(HttpMethod.GET, "/api/client/**").hasAnyRole(UserRole.USER.name())

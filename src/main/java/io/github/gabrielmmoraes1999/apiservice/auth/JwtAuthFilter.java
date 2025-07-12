@@ -101,8 +101,14 @@ public class JwtAuthFilter implements Filter {
 
     private String recoverToken(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) return null;
-        return authHeader.substring("Bearer ".length());
+
+        if (Objects.isNull(authHeader)) {
+            return null;
+        } else if (authHeader.startsWith("Bearer ")) {
+            return authHeader.substring("Bearer ".length());
+        } else {
+            return authHeader;
+        }
     }
 
 }
