@@ -21,6 +21,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DispatcherServlet extends HttpServlet {
 
@@ -295,6 +296,18 @@ public class DispatcherServlet extends HttpServlet {
                 paths.add(fullPath);
 
                 routes.computeIfAbsent(httpMethod, k -> new ArrayList<>()).add(routeInfo);
+                routes.get(httpMethod).sort((r1, r2) -> {
+                    int vars1 = r1.getPathVariableNames().size();
+                    int vars2 = r2.getPathVariableNames().size();
+
+                    if (vars1 != vars2)
+                        return Integer.compare(vars1, vars2);
+
+                    int fixed1 = countFixedSegments(r1);
+                    int fixed2 = countFixedSegments(r2);
+
+                    return Integer.compare(fixed2, fixed1);
+                });
             }
         }
     }
@@ -307,6 +320,21 @@ public class DispatcherServlet extends HttpServlet {
         if (type == Boolean.class || type == boolean.class) return Boolean.parseBoolean(value);
         if (type == Double.class || type == double.class) return Double.parseDouble(value);
         return null; // pode lançar exceção se quiser
+    }
+
+    private int countFixedSegments(RouteInfo routeInfo) {
+        String pattern = routeInfo.getPathPattern().pattern();
+        Matcher m = Pattern.compile("\\^/(.*)\\$").matcher(pattern);
+
+        if (m.find()) {
+            int count = 0;
+            for (String part : m.group(1).split("/")) {
+                if (!part.equals("([^/]+)")) count++;
+            }
+            return count;
+        }
+
+        return 0;
     }
 
 }

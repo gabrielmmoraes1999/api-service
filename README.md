@@ -7,7 +7,7 @@ Importação da biblioteca:
 <dependency>
     <groupId>io.github.gabrielmmoraes1999</groupId>
     <artifactId>api-service</artifactId>
-    <version>2.0.0</version>
+    <version>2.0.1</version>
 </dependency>
 ```
 
@@ -16,6 +16,9 @@ Veja a Wiki https://github.com/gabrielmmoraes1999/api-service/wiki, para ter um 
 ________________________________________________________________________________________________
 
 # Histórico de Versões
+
+## v2.0.1 - 13/07/2025
+- Corrigido bug path com varios parametros.
 
 ## v2.0.0 - 12/07/2025
 - Adicionado suporte a `WebSocket`.
