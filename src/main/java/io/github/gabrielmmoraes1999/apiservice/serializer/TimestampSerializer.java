@@ -15,7 +15,11 @@ public class TimestampSerializer extends StdSerializer<Timestamp> {
 
     @Override
     public void serialize(Timestamp timestamp, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-        jsonGenerator.writeString(ConfigSerializer.SDF_TIMESTAMP.format(timestamp));
+        jsonGenerator.writeString(
+                timestamp.toInstant()
+                .atOffset(ConfigSerializer.ZONE_OFF_SET)
+                .format(ConfigSerializer.DTF_TIMESTAMP)
+        );
     }
 
 }
