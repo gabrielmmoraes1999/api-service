@@ -12,10 +12,9 @@ public class ConfigSerializer {
     protected static SimpleDateFormat SDF_DATE = new SimpleDateFormat("yyyy-MM-dd");
     protected static SimpleDateFormat SDF_TIMESTAMP = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
     protected static DateTimeFormatter DTF_LOCAL_DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    protected static TimeZone TIME_ZONE = TimeZone.getTimeZone("UTC");
 
     public static void init() {
-        SDF_TIMESTAMP.setTimeZone(TIME_ZONE);
+        SDF_TIMESTAMP.setTimeZone(TimeZone.getTimeZone("UTC"));
 
         SIMPLE_MODULE.addSerializer(java.sql.Date.class, new DateSqlSerializer());
         SIMPLE_MODULE.addSerializer(java.time.LocalDateTime.class, new LocalDateTimeSerializer());
@@ -28,6 +27,10 @@ public class ConfigSerializer {
 
     public static SimpleModule getSimpleModule() {
         return ConfigSerializer.SIMPLE_MODULE;
+    }
+
+    public static void setTimeZone(TimeZone zone) {
+        SDF_TIMESTAMP.setTimeZone(zone);
     }
 
 }

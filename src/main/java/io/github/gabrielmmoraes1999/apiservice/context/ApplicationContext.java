@@ -3,7 +3,6 @@ package io.github.gabrielmmoraes1999.apiservice.context;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gabrielmmoraes1999.apiservice.Functions;
 import io.github.gabrielmmoraes1999.apiservice.annotation.Autowired;
-import io.github.gabrielmmoraes1999.apiservice.annotation.Component;
 import io.github.gabrielmmoraes1999.apiservice.annotation.ComponentScan;
 import io.github.gabrielmmoraes1999.apiservice.serializer.ConfigSerializer;
 

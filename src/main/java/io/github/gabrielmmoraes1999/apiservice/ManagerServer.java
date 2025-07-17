@@ -26,6 +26,7 @@ import javax.servlet.ServletException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.EnumSet;
+import java.util.TimeZone;
 
 public class ManagerServer extends Server {
 
@@ -146,6 +147,8 @@ public class ManagerServer extends Server {
                             }
                         } else if (classReturn == PasswordEncoder.class) {
                             ApplicationContext.addBean(PasswordEncoder.class, method.invoke(configInstance));
+                        } else if (classReturn == TimeZone.class) {
+                            ConfigSerializer.setTimeZone((TimeZone) method.invoke(configInstance));
                         } else {
                             method.invoke(configInstance);
                         }
