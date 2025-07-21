@@ -13,7 +13,9 @@ import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClient;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClientJDBC;
 import io.github.gabrielmmoraes1999.apiservice.utils.Message;
 
+import java.sql.Timestamp;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 @RestController
@@ -38,9 +40,19 @@ public class OAuth2TokenController {
             if (ApplicationContext.getBean(PasswordEncoder.class, new Md5PasswordEncoder())
                     .matches(usernameAndPassword[1], registeredClient.getClientSecret())) {
 
+                Instant now = Instant.now();
                 Duration accessTokenTimeToLive = registeredClient.getTokenSettings().getAccessTokenTimeToLive();
                 ProviderJwt providerJwt = ApplicationContext.getBean(ProviderJwt.class, new ProviderJwt());
                 String token = providerJwt.generateToken(registeredClient.getId(), accessTokenTimeToLive.getSeconds());
+
+                RegisteredClientJDBC.saveToken(
+                        registeredClient.getId(),
+                        registeredClient.getClientId(),
+                        Timestamp.from(now),
+                        Timestamp.from(now.plusSeconds(accessTokenTimeToLive.getSeconds())),
+                        "Bearer",
+                        token
+                );
 
                 Map<String, Object> response = new LinkedHashMap<>();
                 response.put("access_token", token);

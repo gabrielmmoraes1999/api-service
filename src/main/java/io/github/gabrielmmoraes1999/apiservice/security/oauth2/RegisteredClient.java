@@ -54,6 +54,10 @@ public class RegisteredClient {
         return id;
     }
 
+    public String getClientId() {
+        return clientId;
+    }
+
     public String getClientSecret() {
         return clientSecret;
     }
