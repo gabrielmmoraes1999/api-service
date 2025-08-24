@@ -31,8 +31,14 @@ public class RegisteredClientJDBC {
                         registeredClient.clientSecret = resultSet.getString("client_secret");
                         registeredClient.clientName = resultSet.getString("client_name");
                         if (resultSet.getString("token_settings") != null) {
-                            registeredClient.tokenSettings = new ObjectMapper()
-                                    .readValue(resultSet.getString("token_settings"), TokenSettings.class);
+                            ObjectMapper mapper = new ObjectMapper();
+                            mapper.registerModule(new JavaTimeModule());
+                            mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+
+                            registeredClient.tokenSettings = mapper.readValue(
+                                    resultSet.getString("token_settings"),
+                                    TokenSettings.class
+                            );
                         }
                     }
                 }
