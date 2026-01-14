@@ -1,5 +1,6 @@
 package io.github.gabrielmmoraes1999.apiservice;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.gabrielmmoraes1999.apiservice.annotation.*;
@@ -39,6 +40,7 @@ public class DispatcherServlet extends HttpServlet {
     public void init() throws ServletException {
         try {
             objectMapper.registerModule(ConfigSerializer.getSimpleModule());
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
             for (Class<?> controller : Functions.getClassesWithAnnotation(RestController.class)) {
                 addRestController(controller);

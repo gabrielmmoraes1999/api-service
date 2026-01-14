@@ -7,7 +7,7 @@ Importação da biblioteca:
 <dependency>
     <groupId>io.github.gabrielmmoraes1999</groupId>
     <artifactId>api-service</artifactId>
-    <version>2.2.2</version>
+    <version>2.2.3</version>
 </dependency>
 ```
 
@@ -16,6 +16,9 @@ Veja a Wiki https://github.com/gabrielmmoraes1999/api-service/wiki, para ter um 
 ________________________________________________________________________________________________
 
 # Histórico de Versões
+
+## v2.2.3 - 13/01/2026
+- Adicionado configuração `DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES`.
 
 ## v2.2.2 - 23/08/2025
 - Corrigido bug na função `findById` no RegisteredClientJDBC.
