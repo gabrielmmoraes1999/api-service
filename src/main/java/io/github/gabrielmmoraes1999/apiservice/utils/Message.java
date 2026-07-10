@@ -2,7 +2,7 @@ package io.github.gabrielmmoraes1999.apiservice.utils;
 
 import io.github.gabrielmmoraes1999.apiservice.json.JSONObject;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
 

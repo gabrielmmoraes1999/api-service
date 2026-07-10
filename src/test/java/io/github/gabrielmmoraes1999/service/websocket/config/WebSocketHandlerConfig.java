@@ -2,9 +2,7 @@ package io.github.gabrielmmoraes1999.service.websocket.config;
 
 import io.github.gabrielmmoraes1999.apiservice.websocket.WebSocketHandler;
 import io.github.gabrielmmoraes1999.apiservice.websocket.WebSocketSession;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
-@WebSocket
 public class WebSocketHandlerConfig extends WebSocketHandler {
 
     @Override

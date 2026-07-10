@@ -1,13 +1,20 @@
 package io.github.gabrielmmoraes1999.apiservice.websocket;
 
-import org.eclipse.jetty.websocket.api.*;
-import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.websocket.api.Callback;
+import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
-public class WebSocketSession implements Session {
+public class WebSocketSession {
 
     private final Session delegate;
 
@@ -15,94 +22,98 @@ public class WebSocketSession implements Session {
         this.delegate = delegate;
     }
 
-    @Override
     public void close() {
-        delegate.close();
+        delegate.close(StatusCode.NORMAL, null, Callback.NOOP);
     }
 
-    @Override
-    public void close(CloseStatus closeStatus) {
-        delegate.close(closeStatus);
+    public void close(int statusCode, String reason) {
+        delegate.close(statusCode, reason, Callback.NOOP);
     }
 
-    @Override
-    public void close(int i, String s) {
-        delegate.close(i, s);
-    }
-
-    @Override
-    public void disconnect() throws IOException {
+    public void disconnect() {
         delegate.disconnect();
     }
 
-    @Override
     public long getIdleTimeout() {
-        return delegate.getIdleTimeout();
+        Duration idleTimeout = delegate.getIdleTimeout();
+        return idleTimeout != null ? idleTimeout.toMillis() : 0;
     }
 
-    @Override
     public InetSocketAddress getLocalAddress() {
-        return delegate.getLocalAddress();
+        return toInetSocketAddress(delegate.getLocalSocketAddress());
     }
 
-    @Override
-    public WebSocketPolicy getPolicy() {
-        return delegate.getPolicy();
-    }
-
-    @Override
     public String getProtocolVersion() {
         return delegate.getProtocolVersion();
     }
 
-    @Override
     public RemoteEndpoint getRemote() {
-        return delegate.getRemote();
+        return new RemoteEndpoint(delegate);
     }
 
-    @Override
     public InetSocketAddress getRemoteAddress() {
-        return delegate.getRemoteAddress();
+        return toInetSocketAddress(delegate.getRemoteSocketAddress());
     }
 
-    @Override
     public UpgradeRequest getUpgradeRequest() {
         return delegate.getUpgradeRequest();
     }
 
-    @Override
     public UpgradeResponse getUpgradeResponse() {
         return delegate.getUpgradeResponse();
     }
 
-    @Override
     public boolean isOpen() {
         return delegate.isOpen();
     }
 
-    @Override
     public boolean isSecure() {
         return delegate.isSecure();
     }
 
-    @Override
-    public void setIdleTimeout(long l) {
-        delegate.setIdleTimeout(l);
+    public void setIdleTimeout(long timeout) {
+        delegate.setIdleTimeout(Duration.ofMillis(timeout));
     }
 
-    @Override
-    public SuspendToken suspend() {
-        return delegate.suspend();
-    }
-
-    public Object getAttribute(String s) {
-        ServletUpgradeRequest upgradeRequest = (ServletUpgradeRequest) delegate.getUpgradeRequest();
-        HttpServletRequest httpRequest = upgradeRequest.getHttpServletRequest();
-        return httpRequest.getAttribute(s);
+    public Object getAttribute(String name) {
+        UpgradeRequest upgradeRequest = delegate.getUpgradeRequest();
+        if (upgradeRequest instanceof JettyServerUpgradeRequest jettyRequest) {
+            return jettyRequest.getHttpServletRequest().getAttribute(name);
+        }
+        return null;
     }
 
     public void sendMessage(String message) throws IOException {
-        delegate.getRemote().sendString(message);
+        getRemote().sendString(message);
+    }
+
+    private static InetSocketAddress toInetSocketAddress(SocketAddress socketAddress) {
+        if (socketAddress instanceof InetSocketAddress inetSocketAddress) {
+            return inetSocketAddress;
+        }
+        return null;
+    }
+
+    public static class RemoteEndpoint {
+
+        private final Session session;
+
+        public RemoteEndpoint(Session session) {
+            this.session = session;
+        }
+
+        public void sendString(String message) throws IOException {
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            session.sendText(message, Callback.from(() -> future.complete(null), future::completeExceptionally));
+            try {
+                future.get();
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                throw new IOException(ex);
+            } catch (ExecutionException ex) {
+                throw new IOException(ex.getCause());
+            }
+        }
     }
 
 }

@@ -2,22 +2,23 @@ package io.github.gabrielmmoraes1999.apiservice.websocket.model;
 
 import io.github.gabrielmmoraes1999.apiservice.websocket.WebSocketHandler;
 import io.github.gabrielmmoraes1999.apiservice.websocket.annotation.HandshakeInterceptor;
-import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
-import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class WebSocketServletImpl extends WebSocketServlet {
+public class WebSocketServletImpl extends JettyWebSocketServlet {
 
-    private final WebSocketHandler handler;
+    private final Class<? extends WebSocketHandler> handlerClass;
     private final List<HandshakeInterceptor> handshakeInterceptorList;
 
     public WebSocketServletImpl(WebSocketHandler handler, List<HandshakeInterceptor> handshakeInterceptorList) {
-        this.handler = handler;
+        this.handlerClass = handler.getClass();
         this.handshakeInterceptorList = handshakeInterceptorList;
     }
 
@@ -52,8 +53,15 @@ public class WebSocketServletImpl extends WebSocketServlet {
     }
 
     @Override
-    public void configure(WebSocketServletFactory factory) {
-        factory.register(handler.getClass());
+    public void configure(JettyWebSocketServletFactory factory) {
+        factory.addMapping("/", (req, res) -> {
+            try {
+                return handlerClass.getDeclaredConstructor().newInstance();
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                     NoSuchMethodException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
     }
 
 }
