@@ -1,119 +1,203 @@
 package io.github.gabrielmmoraes1999.apiservice.websocket;
 
-import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.websocket.api.Callback;
 import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.UpgradeRequest;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.websocket.api.exceptions.WebSocketTimeoutException;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Predicate;
 
-public class WebSocketSession {
+public class WebSocketSession implements Session {
 
     private final Session delegate;
+    private final Map<String, Object> attributes;
 
     public WebSocketSession(Session delegate) {
+        this(delegate, new HashMap<>());
+    }
+
+    public WebSocketSession(Session delegate, Map<String, Object> attributes) {
         this.delegate = delegate;
+        this.attributes = attributes;
     }
 
-    public void close() {
-        delegate.close(StatusCode.NORMAL, null, Callback.NOOP);
+    @Override
+    public void demand() {
+        delegate.demand();
     }
 
-    public void close(int statusCode, String reason) {
-        delegate.close(statusCode, reason, Callback.NOOP);
+    @Override
+    public void sendBinary(ByteBuffer buffer, Callback callback) {
+        delegate.sendBinary(buffer, callback);
     }
 
+    @Override
+    public void sendPartialBinary(ByteBuffer buffer, boolean last, Callback callback) {
+        delegate.sendPartialBinary(buffer, last, callback);
+    }
+
+    @Override
+    public void sendText(String text, Callback callback) {
+        delegate.sendText(text, callback);
+    }
+
+    @Override
+    public void sendPartialText(String text, boolean last, Callback callback) {
+        delegate.sendPartialText(text, last, callback);
+    }
+
+    @Override
+    public void sendPing(ByteBuffer applicationData, Callback callback) {
+        delegate.sendPing(applicationData, callback);
+    }
+
+    @Override
+    public void sendPong(ByteBuffer applicationData, Callback callback) {
+        delegate.sendPong(applicationData, callback);
+    }
+
+    @Override
+    public void close(int statusCode, String reason, Callback callback) {
+        delegate.close(statusCode, reason, callback);
+    }
+
+    @Override
     public void disconnect() {
         delegate.disconnect();
     }
 
-    public long getIdleTimeout() {
-        Duration idleTimeout = delegate.getIdleTimeout();
-        return idleTimeout != null ? idleTimeout.toMillis() : 0;
+    @Override
+    public SocketAddress getLocalSocketAddress() {
+        return delegate.getLocalSocketAddress();
     }
 
-    public InetSocketAddress getLocalAddress() {
-        return toInetSocketAddress(delegate.getLocalSocketAddress());
+    @Override
+    public SocketAddress getRemoteSocketAddress() {
+        return delegate.getRemoteSocketAddress();
     }
 
+    @Override
     public String getProtocolVersion() {
         return delegate.getProtocolVersion();
     }
 
-    public RemoteEndpoint getRemote() {
-        return new RemoteEndpoint(delegate);
-    }
-
-    public InetSocketAddress getRemoteAddress() {
-        return toInetSocketAddress(delegate.getRemoteSocketAddress());
-    }
-
+    @Override
     public UpgradeRequest getUpgradeRequest() {
         return delegate.getUpgradeRequest();
     }
 
+    @Override
     public UpgradeResponse getUpgradeResponse() {
         return delegate.getUpgradeResponse();
     }
 
+    @Override
     public boolean isOpen() {
         return delegate.isOpen();
     }
 
+    @Override
     public boolean isSecure() {
         return delegate.isSecure();
     }
 
-    public void setIdleTimeout(long timeout) {
-        delegate.setIdleTimeout(Duration.ofMillis(timeout));
+    @Override
+    public void addIdleTimeoutListener(Predicate<WebSocketTimeoutException> onIdleTimeout) {
+        delegate.addIdleTimeoutListener(onIdleTimeout);
     }
 
-    public Object getAttribute(String name) {
-        UpgradeRequest upgradeRequest = delegate.getUpgradeRequest();
-        if (upgradeRequest instanceof JettyServerUpgradeRequest jettyRequest) {
-            return jettyRequest.getHttpServletRequest().getAttribute(name);
-        }
-        return null;
+    @Override
+    public Duration getIdleTimeout() {
+        return delegate.getIdleTimeout();
     }
 
-    public void sendMessage(String message) throws IOException {
-        getRemote().sendString(message);
+    @Override
+    public void setIdleTimeout(Duration duration) {
+        delegate.setIdleTimeout(duration);
     }
 
-    private static InetSocketAddress toInetSocketAddress(SocketAddress socketAddress) {
-        if (socketAddress instanceof InetSocketAddress inetSocketAddress) {
-            return inetSocketAddress;
-        }
-        return null;
+    @Override
+    public int getInputBufferSize() {
+        return delegate.getInputBufferSize();
     }
 
-    public static class RemoteEndpoint {
+    @Override
+    public void setInputBufferSize(int size) {
+        delegate.setInputBufferSize(size);
+    }
 
-        private final Session session;
+    @Override
+    public int getOutputBufferSize() {
+        return delegate.getOutputBufferSize();
+    }
 
-        public RemoteEndpoint(Session session) {
-            this.session = session;
-        }
+    @Override
+    public void setOutputBufferSize(int size) {
+        delegate.setOutputBufferSize(size);
+    }
 
-        public void sendString(String message) throws IOException {
-            CompletableFuture<Void> future = new CompletableFuture<>();
-            session.sendText(message, Callback.from(() -> future.complete(null), future::completeExceptionally));
-            try {
-                future.get();
-            } catch (InterruptedException ex) {
-                Thread.currentThread().interrupt();
-                throw new IOException(ex);
-            } catch (ExecutionException ex) {
-                throw new IOException(ex.getCause());
-            }
-        }
+    @Override
+    public long getMaxBinaryMessageSize() {
+        return delegate.getMaxBinaryMessageSize();
+    }
+
+    @Override
+    public void setMaxBinaryMessageSize(long size) {
+        delegate.setMaxBinaryMessageSize(size);
+    }
+
+    @Override
+    public long getMaxTextMessageSize() {
+        return delegate.getMaxTextMessageSize();
+    }
+
+    @Override
+    public void setMaxTextMessageSize(long size) {
+        delegate.setMaxTextMessageSize(size);
+    }
+
+    @Override
+    public long getMaxFrameSize() {
+        return delegate.getMaxFrameSize();
+    }
+
+    @Override
+    public void setMaxFrameSize(long maxFrameSize) {
+        delegate.setMaxFrameSize(maxFrameSize);
+    }
+
+    @Override
+    public boolean isAutoFragment() {
+        return delegate.isAutoFragment();
+    }
+
+    @Override
+    public void setAutoFragment(boolean autoFragment) {
+        delegate.setAutoFragment(autoFragment);
+    }
+
+    @Override
+    public int getMaxOutgoingFrames() {
+        return delegate.getMaxOutgoingFrames();
+    }
+
+    @Override
+    public void setMaxOutgoingFrames(int maxOutgoingFrames) {
+        delegate.setMaxOutgoingFrames(maxOutgoingFrames);
+    }
+
+    public Object getAttribute(String s) {
+        return attributes.get(s);
+    }
+
+    public void sendMessage(String message) {
+        delegate.sendText(message, Callback.NOOP);
     }
 
 }

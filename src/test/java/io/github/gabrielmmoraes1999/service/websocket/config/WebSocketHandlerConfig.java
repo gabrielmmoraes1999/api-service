@@ -8,14 +8,14 @@ public class WebSocketHandlerConfig extends WebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         String authHeader = session.getUpgradeRequest().getHeader("Authorization");
-        System.out.println("Cliente conectado: " + session.getRemoteAddress());
-        session.getRemote().sendString("Bem-vindo ao WebSocket!");
+        System.out.println("Cliente conectado: " + session.getRemoteSocketAddress());
+        session.sendMessage("Bem-vindo ao WebSocket!");
     }
 
     @Override
     public void handleMessage(WebSocketSession session, String message) throws Exception {
         System.out.println("Recebido: " + message);
-        session.getRemote().sendString("Broadcast: " + message);
+        session.sendMessage("Broadcast: " + message);
     }
 
     @Override
@@ -25,7 +25,7 @@ public class WebSocketHandlerConfig extends WebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, int statusCode, String reason) throws Exception {
-        System.out.println("Conexão fechada: " + session.getRemoteAddress());
+        System.out.println("Conexão fechada: " + session.getRemoteSocketAddress());
     }
 
 }

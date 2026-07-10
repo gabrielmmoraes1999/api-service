@@ -2,13 +2,21 @@ package io.github.gabrielmmoraes1999.apiservice.websocket;
 
 import org.eclipse.jetty.websocket.api.Session;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public abstract class WebSocketHandler implements Session.Listener.AutoDemanding {
 
     private WebSocketSession wsSession;
+    private Map<String, Object> handshakeAttributes = new HashMap<>();
+
+    public void setHandshakeAttributes(Map<String, Object> handshakeAttributes) {
+        this.handshakeAttributes = handshakeAttributes;
+    }
 
     @Override
     public void onWebSocketOpen(Session session) {
-        wsSession = new WebSocketSession(session);
+        wsSession = new WebSocketSession(session, handshakeAttributes);
         try {
             afterConnectionEstablished(wsSession);
         } catch (Exception ex) {

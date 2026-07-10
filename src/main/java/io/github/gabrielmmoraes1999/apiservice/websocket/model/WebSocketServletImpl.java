@@ -7,18 +7,17 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class WebSocketServletImpl extends JettyWebSocketServlet {
 
-    private final Class<? extends WebSocketHandler> handlerClass;
+    private final WebSocketHandler handler;
     private final List<HandshakeInterceptor> handshakeInterceptorList;
 
     public WebSocketServletImpl(WebSocketHandler handler, List<HandshakeInterceptor> handshakeInterceptorList) {
-        this.handlerClass = handler.getClass();
+        this.handler = handler;
         this.handshakeInterceptorList = handshakeInterceptorList;
     }
 
@@ -54,11 +53,12 @@ public class WebSocketServletImpl extends JettyWebSocketServlet {
 
     @Override
     public void configure(JettyWebSocketServletFactory factory) {
-        factory.addMapping("/", (req, res) -> {
+        factory.setCreator((req, resp) -> {
             try {
-                return handlerClass.getDeclaredConstructor().newInstance();
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
-                     NoSuchMethodException ex) {
+                WebSocketHandler instance = handler.getClass().getDeclaredConstructor().newInstance();
+                instance.setHandshakeAttributes(new HashMap<>(req.getServletAttributes()));
+                return instance;
+            } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
         });
