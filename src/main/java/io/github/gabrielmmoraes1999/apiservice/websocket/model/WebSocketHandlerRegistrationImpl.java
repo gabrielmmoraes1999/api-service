@@ -3,8 +3,8 @@ package io.github.gabrielmmoraes1999.apiservice.websocket.model;
 import io.github.gabrielmmoraes1999.apiservice.websocket.WebSocketHandler;
 import io.github.gabrielmmoraes1999.apiservice.websocket.annotation.HandshakeInterceptor;
 import io.github.gabrielmmoraes1999.apiservice.websocket.annotation.WebSocketHandlerRegistration;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 
 import java.util.ArrayList;
 import java.util.List;

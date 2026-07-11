@@ -7,7 +7,7 @@ Importação da biblioteca:
 <dependency>
     <groupId>io.github.gabrielmmoraes1999</groupId>
     <artifactId>api-service</artifactId>
-    <version>2.2.3</version>
+    <version>3.0.0</version>
 </dependency>
 ```
 
@@ -16,6 +16,9 @@ Veja a Wiki https://github.com/gabrielmmoraes1999/api-service/wiki, para ter um 
 ________________________________________________________________________________________________
 
 # Histórico de Versões
+
+## v3.0.0 - 10/07/2026
+- Removido suporte `Java 8` atualizado para `Java 21`.
 
 ## v2.2.3 - 13/01/2026
 - Adicionado configuração `DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES`.

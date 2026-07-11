@@ -13,25 +13,31 @@ import io.github.gabrielmmoraes1999.apiservice.ssl.SslProperties;
 import io.github.gabrielmmoraes1999.apiservice.websocket.annotation.WebSocketConfigurer;
 import io.github.gabrielmmoraes1999.apiservice.websocket.model.WebSocketHandlerRegistrationImpl;
 import io.github.gabrielmmoraes1999.apiservice.websocket.model.WebSocketHandlerRegistryImpl;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.ServletException;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.ServletException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.EnumSet;
 import java.util.TimeZone;
+import java.util.concurrent.Executors;
 
 public class ManagerServer extends Server {
 
+    private ServerConnector httpConnector;
+
     protected ManagerServer() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        super(Integer.parseInt(System.getProperty("server.port")));
+        super(createVirtualThreadPool());
+        configureConnector(Integer.parseInt(System.getProperty("server.port")));
 
         ConfigSerializer.init();
         ApplicationContext.init();
@@ -39,7 +45,8 @@ public class ManagerServer extends Server {
     }
 
     protected ManagerServer(Class<?> appClass) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        super(Integer.parseInt(System.getProperty("server.port")));
+        super(createVirtualThreadPool());
+        configureConnector(Integer.parseInt(System.getProperty("server.port")));
 
         ConfigSerializer.init();
         ApplicationContext.init(appClass);
@@ -47,7 +54,8 @@ public class ManagerServer extends Server {
     }
 
     protected ManagerServer(Class<?> appClass, @Name("port") int port) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        super(port);
+        super(createVirtualThreadPool());
+        configureConnector(port);
 
         ConfigSerializer.init();
         ApplicationContext.init(appClass);
@@ -55,11 +63,24 @@ public class ManagerServer extends Server {
     }
 
     protected ManagerServer(@Name("port") int port) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        super(port);
+        super(createVirtualThreadPool());
+        configureConnector(port);
 
         ConfigSerializer.init();
         ApplicationContext.init();
         this.init();
+    }
+
+    private static QueuedThreadPool createVirtualThreadPool() {
+        QueuedThreadPool threadPool = new QueuedThreadPool();
+        threadPool.setVirtualThreadsExecutor(Executors.newVirtualThreadPerTaskExecutor());
+        return threadPool;
+    }
+
+    private void configureConnector(int port) {
+        httpConnector = new ServerConnector(this);
+        httpConnector.setPort(port);
+        setConnectors(new Connector[]{httpConnector});
     }
 
     private void init() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
@@ -67,6 +88,8 @@ public class ManagerServer extends Server {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         context.addServlet(new ServletHolder(dispatcherServlet), "/*");
+
+        boolean webSocketEnabled = false;
 
         for (Class<?> clazz : Functions.getClassesWithAnnotation(Component.class)) {
             Object configInstance = clazz.getConstructor().newInstance();
@@ -115,6 +138,7 @@ public class ManagerServer extends Server {
                     }
                 }
             } else if (configClass.isAnnotationPresent(EnableWebSocket.class)) {
+                webSocketEnabled = true;
                 if (WebSocketConfigurer.class.isAssignableFrom(configClass)) {
                     setWebSocketConfigurer((WebSocketConfigurer) configInstance, context);
                 }
@@ -143,7 +167,7 @@ public class ManagerServer extends Server {
                                 );
 
                                 httpsConnector.setPort(sslProperties.getPort());
-                                setConnectors(new Connector[]{httpsConnector});
+                                setConnectors(new Connector[]{httpConnector, httpsConnector});
                             }
                         } else if (classReturn == PasswordEncoder.class) {
                             ApplicationContext.addBean(PasswordEncoder.class, method.invoke(configInstance));
@@ -155,6 +179,10 @@ public class ManagerServer extends Server {
                     }
                 }
             }
+        }
+
+        if (webSocketEnabled) {
+            JettyWebSocketServletContainerInitializer.configure(context, null);
         }
 
         setHandler(context);
