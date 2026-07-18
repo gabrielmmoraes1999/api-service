@@ -63,7 +63,18 @@ public class RegisteredClient {
     }
 
     public TokenSettings getTokenSettings() {
-        return tokenSettings;
+        if (this.tokenSettings != null) {
+            return this.tokenSettings;
+        }
+
+        TokenSettings beanTokenSettings = ApplicationContext.getBean(TokenSettings.class);
+        if (beanTokenSettings != null) {
+            return beanTokenSettings;
+        }
+
+        return TokenSettings.builder()
+                .accessTokenTimeToLive(Duration.ofHours(1))
+                .build();
     }
 
     public RegisteredClient build() {
@@ -73,12 +84,6 @@ public class RegisteredClient {
 
         if (Objects.isNull(this.clientName)) {
             this.clientName = this.id;
-        }
-
-        if (Objects.isNull(this.tokenSettings)) {
-            this.tokenSettings = TokenSettings.builder()
-                    .accessTokenTimeToLive(Duration.ofHours(1))
-                    .build();
         }
 
         return this;

@@ -7,7 +7,7 @@ Importação da biblioteca:
 <dependency>
     <groupId>io.github.gabrielmmoraes1999</groupId>
     <artifactId>api-service</artifactId>
-    <version>3.0.0</version>
+    <version>3.1.0</version>
 </dependency>
 ```
 
@@ -16,6 +16,37 @@ Veja a Wiki https://github.com/gabrielmmoraes1999/api-service/wiki, para ter um 
 ________________________________________________________________________________________________
 
 # Histórico de Versões
+
+## v3.1.0 - 17/07/2026
+- Adicionado suporte opcional a `refresh_token` no endpoint OAuth2 (`grant_type=refresh_token`), configurável via `TokenSettings`.
+- `TokenSettings` agora aceita configuração global via `@Bean` e sobrescrita por cliente no banco (`TOKEN_SETTINGS`):
+  1. Se o cliente tiver `TOKEN_SETTINGS` preenchido no banco, usa o valor do banco.
+  2. Se estiver nulo/vazio, usa o `TokenSettings` registrado como `@Bean`.
+  3. Se nenhum Bean existir, usa o padrão interno (`accessTokenTimeToLive` de 1 hora).
+
+Exemplo de Bean global:
+
+```java
+@Bean
+public TokenSettings tokenSettings() {
+    return TokenSettings.builder()
+            .accessTokenTimeToLive(Duration.ofHours(6))
+            .refreshTokenTimeToLive(Duration.ofDays(30))
+            .refreshTokenAuthenticationMethod(RefreshTokenAuthenticationMethod.REFRESH_TOKEN_ONLY)
+            .refreshTokenFormat(RefreshTokenFormat.OPAQUE_32_BASE64_URL)
+            .build();
+}
+```
+
+Para herdar o Bean, salve o cliente sem `.tokenSettings(...)` (grava `NULL` em `TOKEN_SETTINGS`).
+Para sobrescrever um usuário específico, use `.tokenSettings(...)` ou `RegisteredClientJDBC.updateTokenSettings(...)`.
+O formato do refresh token é definido em um único enum: `UUID`, `JWT`, ou variantes opacas
+como `OPAQUE_32_BASE64_URL`, `OPAQUE_32_HEX`, `OPAQUE_32_BASE62`, `OPAQUE_64_BASE64_URL`,
+`OPAQUE_64_HEX` e `OPAQUE_64_BASE62`. Quando omitido, o padrão é `UUID`. Em todos os formatos,
+o token permanece persistido no banco para permitir rotação e revogação.
+
+Com `RefreshTokenAuthenticationMethod.REFRESH_TOKEN_ONLY`, a renovação exige somente
+`grant_type=refresh_token` e `refresh_token`. O token utilizado é invalidado após a renovação.
 
 ## v3.0.0 - 10/07/2026
 - Removido suporte `Java 8` atualizado para `Java 21`.
