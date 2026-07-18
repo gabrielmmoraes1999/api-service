@@ -6,7 +6,7 @@
 
     <groupId>io.github.gabrielmmoraes1999</groupId>
     <artifactId>api-service</artifactId>
-    <version>3.0.0</version>
+    <version>3.1.0</version>
 
     <name>ApiService</name>
     <description>Create api request.</description>
@@ -127,7 +127,7 @@
         <dependency>
             <groupId>io.github.gabrielmmoraes1999</groupId>
             <artifactId>DBRepository</artifactId>
-            <version>1.4.0</version>
+            <version>2.1.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>

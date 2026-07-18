@@ -3,6 +3,7 @@ package io.github.gabrielmmoraes1999.service.controller;
 import io.github.gabrielmmoraes1999.apiservice.annotation.*;
 import io.github.gabrielmmoraes1999.apiservice.http.ResponseEntity;
 import io.github.gabrielmmoraes1999.apiservice.http.HttpStatus;
+import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RefreshTokenAuthenticationMethod;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClient;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClientJDBC;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.TokenSettings;
@@ -23,14 +24,12 @@ public class UserController {
     public ResponseEntity<Object> create(@RequestBody User user) {
         user.setUuid(UUID.randomUUID().toString());
 
+        // Sem tokenSettings: TOKEN_SETTINGS fica NULL e o Bean global é usado em runtime.
         RegisteredClient registeredClient = RegisteredClient
                 .withId(user.getUuid())
                 .clientId(user.getUsername())
                 .clientName(user.getName())
                 .clientSecret(user.getPassword())
-                .tokenSettings(TokenSettings.builder()
-                        .accessTokenTimeToLive(Duration.ofHours(6))
-                        .build())
                 .build();
 
         user.setPassword(registeredClient.getClientSecret());
@@ -46,7 +45,9 @@ public class UserController {
 
     @PutMapping("/user")
     public ResponseEntity<Object> update(@RequestBody User login) {
-        return new ResponseEntity<>(userRepository.save(login), HttpStatus.ACCEPTED);
+        // Sobrescreve apenas este usuário no banco; demais clientes continuam com o Bean.
+        RegisteredClientJDBC.updateTokenSettings(customUserTokenSettings(), login.getUuid());
+        return new ResponseEntity<>(login, HttpStatus.ACCEPTED);
     }
 
     @DeleteMapping("/user/{uuid}")
@@ -54,6 +55,14 @@ public class UserController {
         userRepository.deleteById(uuid);
         RegisteredClientJDBC.delete(uuid);
         return new ResponseEntity<>("Registro excluído com sucesso!", HttpStatus.NO_CONTENT);
+    }
+
+    private static TokenSettings customUserTokenSettings() {
+        return TokenSettings.builder()
+                .accessTokenTimeToLive(Duration.ofHours(12))
+                .refreshTokenTimeToLive(Duration.ofDays(60))
+                .refreshTokenAuthenticationMethod(RefreshTokenAuthenticationMethod.CLIENT_ID_ONLY)
+                .build();
     }
 
 }

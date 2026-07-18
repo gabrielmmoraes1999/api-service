@@ -6,6 +6,7 @@ import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
 import io.github.gabrielmmoraes1999.apiservice.controller.OAuth2TokenController;
 import io.github.gabrielmmoraes1999.apiservice.security.crypto.PasswordEncoder;
 import io.github.gabrielmmoraes1999.apiservice.security.jwt.ProviderJwt;
+import io.github.gabrielmmoraes1999.apiservice.security.oauth2.TokenSettings;
 import io.github.gabrielmmoraes1999.apiservice.serializer.ConfigSerializer;
 import io.github.gabrielmmoraes1999.apiservice.security.web.HttpSecurity;
 import io.github.gabrielmmoraes1999.apiservice.security.web.SecurityFilterChain;
@@ -132,6 +133,8 @@ public class ManagerServer extends Server {
                         } else if (classReturn ==  BasicAuthFilter.class) {
                             Object bean = method.invoke(configInstance);
                             context.addFilter(new FilterHolder((BasicAuthFilter) bean), "/*", null);
+                        } else if (classReturn == TokenSettings.class) {
+                            ApplicationContext.addBean(TokenSettings.class, method.invoke(configInstance));
                         } else {
                             method.invoke(configInstance);
                         }
@@ -171,6 +174,8 @@ public class ManagerServer extends Server {
                             }
                         } else if (classReturn == PasswordEncoder.class) {
                             ApplicationContext.addBean(PasswordEncoder.class, method.invoke(configInstance));
+                        } else if (classReturn == TokenSettings.class) {
+                            ApplicationContext.addBean(TokenSettings.class, method.invoke(configInstance));
                         } else if (classReturn == TimeZone.class) {
                             ConfigSerializer.setTimeZone((TimeZone) method.invoke(configInstance));
                         } else {
