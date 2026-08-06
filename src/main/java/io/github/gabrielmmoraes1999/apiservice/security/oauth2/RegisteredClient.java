@@ -2,7 +2,7 @@ package io.github.gabrielmmoraes1999.apiservice.security.oauth2;
 
 import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
 import io.github.gabrielmmoraes1999.apiservice.security.crypto.PasswordEncoder;
-import io.github.gabrielmmoraes1999.apiservice.security.crypto.md5.Md5PasswordEncoder;
+import io.github.gabrielmmoraes1999.apiservice.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -90,7 +90,7 @@ public class RegisteredClient {
     }
 
     public static String getClientSecret(String clientSecret) {
-        return ApplicationContext.getBean(PasswordEncoder.class, new Md5PasswordEncoder()).encode(clientSecret);
+        return ApplicationContext.getBean(PasswordEncoder.class, new BCryptPasswordEncoder()).encode(clientSecret);
     }
 
 }

@@ -15,6 +15,6 @@ public class DateSqlSerializer extends StdSerializer<Date> {
 
     @Override
     public void serialize(Date date, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-        jsonGenerator.writeString(ConfigSerializer.SDF_DATE.format(date));
+        jsonGenerator.writeString(date.toLocalDate().format(ConfigSerializer.DTF_DATE));
     }
 }

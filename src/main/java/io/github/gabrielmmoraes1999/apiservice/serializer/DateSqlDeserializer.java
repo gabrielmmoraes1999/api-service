@@ -6,7 +6,8 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 
 import java.io.IOException;
 import java.sql.Date;
-import java.text.ParseException;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 
 public class DateSqlDeserializer extends JsonDeserializer<Date> {
 
@@ -15,8 +16,8 @@ public class DateSqlDeserializer extends JsonDeserializer<Date> {
         String dateStr = jsonParser.getText().trim();
 
         try {
-            return new Date(ConfigSerializer.SDF_DATE.parse(dateStr).getTime());
-        } catch (ParseException e) {
+            return Date.valueOf(LocalDate.parse(dateStr, ConfigSerializer.DTF_DATE));
+        } catch (DateTimeParseException e) {
             throw new RuntimeException("Format invalid to Date: " + dateStr, e);
         }
     }

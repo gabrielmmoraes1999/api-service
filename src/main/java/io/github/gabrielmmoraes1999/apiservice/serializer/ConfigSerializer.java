@@ -2,7 +2,6 @@ package io.github.gabrielmmoraes1999.apiservice.serializer;
 
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
-import java.text.SimpleDateFormat;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -14,7 +13,7 @@ public class ConfigSerializer {
 
     protected static ZoneOffset ZONE_OFF_SET = ZoneOffset.of("Z");
     protected static SimpleModule SIMPLE_MODULE = new SimpleModule();
-    protected static SimpleDateFormat SDF_DATE = new SimpleDateFormat("yyyy-MM-dd");
+    protected static DateTimeFormatter DTF_DATE = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     protected static DateTimeFormatter DTF_LOCAL_DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     protected static DateTimeFormatter DTF_TIMESTAMP = new DateTimeFormatterBuilder()
             .appendPattern("yyyy-MM-dd'T'HH:mm:ss")

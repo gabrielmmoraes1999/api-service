@@ -6,12 +6,12 @@ import io.github.gabrielmmoraes1999.apiservice.annotation.Autowired;
 import io.github.gabrielmmoraes1999.apiservice.annotation.ComponentScan;
 import io.github.gabrielmmoraes1999.apiservice.serializer.ConfigSerializer;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ApplicationContext {
 
-    private static final Map<Class<?>, Object> beans = new HashMap<>();
+    private static final Map<Class<?>, Object> beans = new ConcurrentHashMap<>();
 
     public static void init(Class<?> appClass) {
         if (appClass.isAnnotationPresent(ComponentScan.class)) {
@@ -57,6 +57,13 @@ public class ApplicationContext {
 
     public static <T> T getBean(Class<T> clazz, Object object) {
         return clazz.cast(beans.getOrDefault(clazz, object));
+    }
+
+    /**
+     * Clears registered beans (intended for tests).
+     */
+    public static void clear() {
+        beans.clear();
     }
 
 }

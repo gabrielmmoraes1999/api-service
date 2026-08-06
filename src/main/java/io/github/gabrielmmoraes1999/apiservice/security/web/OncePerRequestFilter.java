@@ -1,5 +1,6 @@
 package io.github.gabrielmmoraes1999.apiservice.security.web;
 
+import io.github.gabrielmmoraes1999.apiservice.security.SecurityContextHolder;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,7 +21,11 @@ public abstract class OncePerRequestFilter implements Filter {
             return;
         }
         request.setAttribute(this.getClass().getName(), Boolean.TRUE);
-        doFilterInternal(request, (HttpServletResponse) res, chain);
+        try {
+            doFilterInternal(request, (HttpServletResponse) res, chain);
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     protected abstract void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
