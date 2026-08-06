@@ -28,75 +28,84 @@ public class JwtAuthFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain) throws IOException, ServletException {
-        HttpServletRequest request = (HttpServletRequest) req;
-        HttpServletResponse response = (HttpServletResponse) res;
-        String path = request.getRequestURI() + "/";
-        String method = request.getMethod();
+        try {
+            HttpServletRequest request = (HttpServletRequest) req;
+            HttpServletResponse response = (HttpServletResponse) res;
+            String path = request.getRequestURI() + "/";
+            String method = request.getMethod();
 
-        if (Objects.equals("/oauth2/token/", path) && Objects.equals("POST", method)) {
+            if (Objects.equals("/oauth2/token/", path) && Objects.equals("POST", method)) {
+                chain.doFilter(req, res);
+                return;
+            }
+
+            if (SecurityFilterChain.getRules() == null) {
+                chain.doFilter(req, res);
+                return;
+            }
+
+            if (SecurityFilterChain.getRule(path, method, SecurityRule.AccessType.PERMIT_ALL).isPresent()) {
+                chain.doFilter(req, res);
+                return;
+            }
+
+            List<SecurityRule> ruleList = SecurityFilterChain.getListRule(path, method, SecurityRule.AccessType.HAS_ROLE);
+
+            if (ruleList.isEmpty()) {
+                Message.error(response, HttpServletResponse.SC_FORBIDDEN, "Acesso negado");
+                return;
+            }
+
+            List<String> accessTypeList = ruleList.stream()
+                    .flatMap(rule -> rule.getRoles().stream())
+                    .collect(Collectors.toList());
+
+            String token = recoverToken(request);
+            if (token == null) {
+                Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "Token away");
+                return;
+            }
+
+            ProviderJwt providerJwt = ApplicationContext.getBean(ProviderJwt.class);
+            if (providerJwt == null) {
+                Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "Token invalid");
+                return;
+            }
+
+            String subject = providerJwt.checkToken(token);
+            if (subject == null) {
+                Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "Token invalid");
+                return;
+            }
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+            if (authentication == null) {
+                Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "User not found");
+                return;
+            }
+
+            UserDetails userDetails = authentication.getPrincipal();
+
+            if (userDetails == null) {
+                Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "User not found");
+                return;
+            }
+
+            boolean hasRole = userDetails.getAuthorities().stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .anyMatch(accessTypeList::contains);
+
+            if (!hasRole) {
+                Message.error(response, HttpServletResponse.SC_FORBIDDEN, "Permission denied");
+                return;
+            }
+
+            request.setAttribute("userDetails", userDetails);
             chain.doFilter(req, res);
-            return;
+        } finally {
+            SecurityContextHolder.clearContext();
         }
-
-        if (SecurityFilterChain.getRules() == null) {
-            chain.doFilter(req, res);
-            return;
-        }
-
-        if (SecurityFilterChain.getRule(path, method, SecurityRule.AccessType.PERMIT_ALL).isPresent()) {
-            chain.doFilter(req, res);
-            return;
-        }
-
-        List<SecurityRule> ruleList = SecurityFilterChain.getListRule(path, method, SecurityRule.AccessType.HAS_ROLE);
-
-        if (ruleList.isEmpty()) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Acesso negado");
-            return;
-        }
-
-        List<String> accessTypeList = ruleList.stream()
-                .flatMap(rule-> rule.getRoles().stream())
-                .collect(Collectors.toList());
-
-        String token = recoverToken(request);
-        if (token == null) {
-            //response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token away");
-            Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "Token away");
-            return;
-        }
-
-        String subject = ApplicationContext.getBean(ProviderJwt.class, new ProviderJwt()).checkToken(token);
-        if (subject == null) {
-            Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "Token invalid");
-            return;
-        }
-
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null) {
-            Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "User not found");
-            return;
-        }
-
-        UserDetails userDetails = authentication.getPrincipal();
-
-        if (userDetails == null) {
-            Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "User not found");
-            return;
-        }
-
-        boolean hasRole = userDetails.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .anyMatch(accessTypeList::contains);
-
-        if (!hasRole) {
-            Message.error(response, HttpServletResponse.SC_UNAUTHORIZED, "Permission denied");
-            return;
-        }
-
-        request.setAttribute("userDetails", userDetails);
-        chain.doFilter(req, res);
     }
 
     private String recoverToken(HttpServletRequest request) {
@@ -112,4 +121,3 @@ public class JwtAuthFilter implements Filter {
     }
 
 }
-

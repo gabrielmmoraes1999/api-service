@@ -6,132 +6,85 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.sql.Types;
 
 public class RegisteredClientJDBC {
+
+    private static final Logger log = LoggerFactory.getLogger(RegisteredClientJDBC.class);
+
+    private static final ObjectMapper TOKEN_SETTINGS_MAPPER = createTokenSettingsMapper();
 
     private static Connection connection;
     private static HikariDataSource hikariDataSource;
 
+    @FunctionalInterface
+    private interface SqlFunction<T> {
+        T apply(Connection conn) throws SQLException, JsonProcessingException;
+    }
+
+    @FunctionalInterface
+    private interface SqlConsumer {
+        void accept(Connection conn) throws SQLException, JsonProcessingException;
+    }
+
     public static RegisteredClient findById(String id) {
-        Connection conn = null;
-        RegisteredClient registeredClient = null;
-
-        try {
-            conn = RegisteredClientJDBC.getConnection();
-
-            try (PreparedStatement preparedStatement = conn.prepareStatement("select * from oauth2_registered_client where id = ?")) {
+        return withConnection(conn -> {
+            try (PreparedStatement preparedStatement = conn.prepareStatement(
+                    "select * from oauth2_registered_client where id = ?")) {
                 preparedStatement.setString(1, id);
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
                     if (resultSet.next()) {
-                        registeredClient = new RegisteredClient(resultSet.getString("id"));
-                        registeredClient.clientId = resultSet.getString("client_id");
-                        registeredClient.clientIdIssuedAt = resultSet.getTimestamp("client_id_issued_at").toInstant();
-                        registeredClient.clientSecret = resultSet.getString("client_secret");
-                        registeredClient.clientName = resultSet.getString("client_name");
-                        registeredClient.tokenSettings = readTokenSettings(resultSet.getString("token_settings"));
+                        return mapRegisteredClient(resultSet);
                     }
                 }
             }
-        } catch (SQLException | JsonProcessingException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    if (RegisteredClientJDBC.hikariDataSource != null)
-                        conn.close();
-                } catch (SQLException ignore) {
-
-                }
-            }
-        }
-
-        return registeredClient;
+            return null;
+        });
     }
 
     public static RegisteredClient findByClientId(String clientId) {
-        Connection conn = null;
-        RegisteredClient registeredClient = null;
-
-        try {
-            conn = RegisteredClientJDBC.getConnection();
-
-            try (PreparedStatement preparedStatement = conn.prepareStatement("select * from oauth2_registered_client where client_id = ?")) {
+        return withConnection(conn -> {
+            try (PreparedStatement preparedStatement = conn.prepareStatement(
+                    "select * from oauth2_registered_client where client_id = ?")) {
                 preparedStatement.setString(1, clientId);
-
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
                     if (resultSet.next()) {
-                        registeredClient = new RegisteredClient(resultSet.getString("id"));
-                        registeredClient.clientId = resultSet.getString("client_id");
-                        registeredClient.clientIdIssuedAt = resultSet.getTimestamp("client_id_issued_at").toInstant();
-                        registeredClient.clientSecret = resultSet.getString("client_secret");
-                        registeredClient.clientName = resultSet.getString("client_name");
-                        registeredClient.tokenSettings = readTokenSettings(resultSet.getString("token_settings"));
+                        return mapRegisteredClient(resultSet);
                     }
                 }
             }
-        } catch (SQLException | JsonProcessingException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    if (RegisteredClientJDBC.hikariDataSource != null)
-                        conn.close();
-                } catch (SQLException ignore) {
-
-                }
-            }
-        }
-
-        return registeredClient;
+            return null;
+        });
     }
 
     public static RegisteredClient findByClientIdAndClientSecret(String clientId, String clientSecret) {
-        Connection conn = null;
-        RegisteredClient registeredClient = null;
-
-        try {
-            conn = RegisteredClientJDBC.getConnection();
-
-            try (PreparedStatement preparedStatement = conn.prepareStatement("select * from oauth2_registered_client where client_id = ? and client_secret = ?")) {
+        return withConnection(conn -> {
+            try (PreparedStatement preparedStatement = conn.prepareStatement(
+                    "select * from oauth2_registered_client where client_id = ? and client_secret = ?")) {
                 preparedStatement.setString(1, clientId);
                 preparedStatement.setString(2, clientSecret);
-
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
                     if (resultSet.next()) {
-                        registeredClient = new RegisteredClient(resultSet.getString("id"));
-                        registeredClient.clientId = resultSet.getString("client_id");
-                        registeredClient.clientIdIssuedAt = resultSet.getTimestamp("client_id_issued_at").toInstant();
-                        registeredClient.clientSecret = resultSet.getString("client_secret");
-                        registeredClient.clientName = resultSet.getString("client_name");
-                        registeredClient.tokenSettings = readTokenSettings(resultSet.getString("token_settings"));
+                        return mapRegisteredClient(resultSet);
                     }
                 }
             }
-        } catch (SQLException | JsonProcessingException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    if (RegisteredClientJDBC.hikariDataSource != null)
-                        conn.close();
-                } catch (SQLException ignore) {
-
-                }
-            }
-        }
-
-        return registeredClient;
+            return null;
+        });
     }
 
     public static void save(RegisteredClient registeredClient) {
-        Connection conn = null;
-
-        try {
-            conn = RegisteredClientJDBC.getConnection();
-
-            try (PreparedStatement preparedStatement = conn.prepareStatement("insert into oauth2_registered_client (id, client_id, client_id_issued_at, client_secret, client_name, token_settings) values (?,?,?,?,?,?)")) {
+        withConnectionVoid(conn -> {
+            try (PreparedStatement preparedStatement = conn.prepareStatement(
+                    "insert into oauth2_registered_client (id, client_id, client_id_issued_at, client_secret, client_name, token_settings) values (?,?,?,?,?,?)")) {
                 preparedStatement.setString(1, registeredClient.id);
                 preparedStatement.setString(2, registeredClient.clientId);
                 preparedStatement.setTimestamp(3, Timestamp.from(registeredClient.clientIdIssuedAt));
@@ -140,123 +93,50 @@ public class RegisteredClientJDBC {
                 writeTokenSettings(preparedStatement, 6, registeredClient.tokenSettings);
                 preparedStatement.execute();
             }
-
-            if (RegisteredClientJDBC.hikariDataSource != null)
-                conn.close();
-        } catch (SQLException | JsonProcessingException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    if (RegisteredClientJDBC.hikariDataSource != null)
-                        conn.close();
-                } catch (SQLException ignore) {
-
-                }
-            }
-        }
-
+        });
     }
 
     public static void updateClientId(String clientId, String id) {
-        Connection conn = null;
-
-        try {
-            conn = RegisteredClientJDBC.getConnection();
-
-            try (PreparedStatement preparedStatement = conn.prepareStatement("update oauth2_registered_client set client_id = ? where id = ?")) {
+        withConnectionVoid(conn -> {
+            try (PreparedStatement preparedStatement = conn.prepareStatement(
+                    "update oauth2_registered_client set client_id = ? where id = ?")) {
                 preparedStatement.setString(1, clientId);
                 preparedStatement.setString(2, id);
                 preparedStatement.execute();
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    if (RegisteredClientJDBC.hikariDataSource != null)
-                        conn.close();
-                } catch (SQLException ignore) {
-
-                }
-            }
-        }
+        });
     }
 
     public static void updateClientSecret(String clientSecret, String id) {
-        Connection conn = null;
-
-        try {
-            conn = RegisteredClientJDBC.getConnection();
-
-            try (PreparedStatement preparedStatement = conn.prepareStatement("update oauth2_registered_client set client_secret = ? where id = ?")) {
+        withConnectionVoid(conn -> {
+            try (PreparedStatement preparedStatement = conn.prepareStatement(
+                    "update oauth2_registered_client set client_secret = ? where id = ?")) {
                 preparedStatement.setString(1, clientSecret);
                 preparedStatement.setString(2, id);
                 preparedStatement.execute();
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    if (RegisteredClientJDBC.hikariDataSource != null)
-                        conn.close();
-                } catch (SQLException ignore) {
-
-                }
-            }
-        }
+        });
     }
 
     public static void updateTokenSettings(TokenSettings tokenSettings, String id) {
-        Connection conn = null;
-
-        try {
-            conn = RegisteredClientJDBC.getConnection();
-
+        withConnectionVoid(conn -> {
             try (PreparedStatement preparedStatement = conn.prepareStatement(
-                    "update oauth2_registered_client set token_settings = ? where id = ?"
-            )) {
+                    "update oauth2_registered_client set token_settings = ? where id = ?")) {
                 writeTokenSettings(preparedStatement, 1, tokenSettings);
                 preparedStatement.setString(2, id);
                 preparedStatement.execute();
             }
-        } catch (SQLException | JsonProcessingException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    if (RegisteredClientJDBC.hikariDataSource != null)
-                        conn.close();
-                } catch (SQLException ignore) {
-
-                }
-            }
-        }
+        });
     }
 
     public static void delete(String uuid) {
-        Connection conn = null;
-
-        try {
-            conn = RegisteredClientJDBC.getConnection();
-
-            try (PreparedStatement preparedStatement = conn.prepareStatement("delete from oauth2_registered_client where id = ?")) {
+        withConnectionVoid(conn -> {
+            try (PreparedStatement preparedStatement = conn.prepareStatement(
+                    "delete from oauth2_registered_client where id = ?")) {
                 preparedStatement.setString(1, uuid);
                 preparedStatement.execute();
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    if (RegisteredClientJDBC.hikariDataSource != null)
-                        conn.close();
-                } catch (SQLException ignore) {
-
-                }
-            }
-        }
+        });
     }
 
     public static void saveToken(
@@ -291,50 +171,61 @@ public class RegisteredClientJDBC {
             Timestamp refreshTokenIssuedAt,
             Timestamp refreshTokenExpiresAt
     ) {
-        Connection conn = null;
+        withConnectionVoid(conn -> insertToken(
+                conn,
+                registeredClientId,
+                principalName,
+                accessTokenIssuedAt,
+                accessTokenExpiresAt,
+                accessTokenType,
+                accessTokenValue,
+                refreshTokenValue,
+                refreshTokenIssuedAt,
+                refreshTokenExpiresAt
+        ));
+    }
 
-        try {
-            conn = RegisteredClientJDBC.getConnection();
-
-            try (PreparedStatement preparedStatement = conn.prepareStatement(
-                    "insert into oauth2_authorization (registered_client_id, principal_name, access_token_issued_at, access_token_expires_at, access_token_type, access_token_value, refresh_token_value, refresh_token_issued_at, refresh_token_expires_at) values (?,?,?,?,?,?,?,?,?)"
-            )) {
-                preparedStatement.setString(1, registeredClientId);
-                preparedStatement.setString(2, principalName);
-                preparedStatement.setTimestamp(3, accessTokenIssuedAt);
-                preparedStatement.setTimestamp(4, accessTokenExpiresAt);
-                preparedStatement.setString(5, accessTokenType);
-                preparedStatement.setString(6, accessTokenValue);
-                preparedStatement.setString(7, refreshTokenValue);
-                preparedStatement.setTimestamp(8, refreshTokenIssuedAt);
-                preparedStatement.setTimestamp(9, refreshTokenExpiresAt);
-                preparedStatement.execute();
+    /**
+     * Invalidates the old refresh token and persists the new authorization in a single transaction.
+     */
+    public static void rotateRefreshToken(
+            String oldRefreshToken,
+            String registeredClientId,
+            String principalName,
+            Timestamp accessTokenIssuedAt,
+            Timestamp accessTokenExpiresAt,
+            String accessTokenType,
+            String accessTokenValue,
+            String refreshTokenValue,
+            Timestamp refreshTokenIssuedAt,
+            Timestamp refreshTokenExpiresAt
+    ) {
+        withTransaction(conn -> {
+            try (PreparedStatement invalidate = conn.prepareStatement(
+                    "update oauth2_authorization set refresh_token_value = null, refresh_token_issued_at = null, refresh_token_expires_at = null where refresh_token_value = ?")) {
+                invalidate.setString(1, oldRefreshToken);
+                invalidate.execute();
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    if (RegisteredClientJDBC.hikariDataSource != null)
-                        conn.close();
-                } catch (SQLException ignore) {
-
-                }
-            }
-        }
+            insertToken(
+                    conn,
+                    registeredClientId,
+                    principalName,
+                    accessTokenIssuedAt,
+                    accessTokenExpiresAt,
+                    accessTokenType,
+                    accessTokenValue,
+                    refreshTokenValue,
+                    refreshTokenIssuedAt,
+                    refreshTokenExpiresAt
+            );
+        });
     }
 
     public static OAuth2Authorization findAuthorizationByRefreshToken(String refreshToken) {
-        Connection conn = null;
-
-        try {
-            conn = RegisteredClientJDBC.getConnection();
-
+        return withConnection(conn -> {
             try (PreparedStatement preparedStatement = conn.prepareStatement(
-                    "select registered_client_id, principal_name, refresh_token_expires_at from oauth2_authorization where refresh_token_value = ?"
-            )) {
+                    "select registered_client_id, principal_name, refresh_token_expires_at from oauth2_authorization where refresh_token_value = ?")) {
                 preparedStatement.setString(1, refreshToken);
-
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
                     if (resultSet.next()) {
                         return new OAuth2Authorization(
@@ -345,46 +236,18 @@ public class RegisteredClientJDBC {
                     }
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    if (RegisteredClientJDBC.hikariDataSource != null)
-                        conn.close();
-                } catch (SQLException ignore) {
-
-                }
-            }
-        }
-
-        return null;
+            return null;
+        });
     }
 
     public static void invalidateRefreshToken(String refreshToken) {
-        Connection conn = null;
-
-        try {
-            conn = RegisteredClientJDBC.getConnection();
-
+        withConnectionVoid(conn -> {
             try (PreparedStatement preparedStatement = conn.prepareStatement(
-                    "update oauth2_authorization set refresh_token_value = null, refresh_token_issued_at = null, refresh_token_expires_at = null where refresh_token_value = ?"
-            )) {
+                    "update oauth2_authorization set refresh_token_value = null, refresh_token_issued_at = null, refresh_token_expires_at = null where refresh_token_value = ?")) {
                 preparedStatement.setString(1, refreshToken);
                 preparedStatement.execute();
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (conn != null) {
-                try {
-                    if (RegisteredClientJDBC.hikariDataSource != null)
-                        conn.close();
-                } catch (SQLException ignore) {
-
-                }
-            }
-        }
+        });
     }
 
     public static void setConnection(Connection connection) {
@@ -395,21 +258,118 @@ public class RegisteredClientJDBC {
         RegisteredClientJDBC.hikariDataSource = hikariDataSource;
     }
 
+    private static RegisteredClient mapRegisteredClient(ResultSet resultSet) throws SQLException, JsonProcessingException {
+        RegisteredClient registeredClient = new RegisteredClient(resultSet.getString("id"));
+        registeredClient.clientId = resultSet.getString("client_id");
+        registeredClient.clientIdIssuedAt = resultSet.getTimestamp("client_id_issued_at").toInstant();
+        registeredClient.clientSecret = resultSet.getString("client_secret");
+        registeredClient.clientName = resultSet.getString("client_name");
+        registeredClient.tokenSettings = readTokenSettings(resultSet.getString("token_settings"));
+        return registeredClient;
+    }
+
+    private static void insertToken(
+            Connection conn,
+            String registeredClientId,
+            String principalName,
+            Timestamp accessTokenIssuedAt,
+            Timestamp accessTokenExpiresAt,
+            String accessTokenType,
+            String accessTokenValue,
+            String refreshTokenValue,
+            Timestamp refreshTokenIssuedAt,
+            Timestamp refreshTokenExpiresAt
+    ) throws SQLException {
+        try (PreparedStatement preparedStatement = conn.prepareStatement(
+                "insert into oauth2_authorization (registered_client_id, principal_name, access_token_issued_at, access_token_expires_at, access_token_type, access_token_value, refresh_token_value, refresh_token_issued_at, refresh_token_expires_at) values (?,?,?,?,?,?,?,?,?)")) {
+            preparedStatement.setString(1, registeredClientId);
+            preparedStatement.setString(2, principalName);
+            preparedStatement.setTimestamp(3, accessTokenIssuedAt);
+            preparedStatement.setTimestamp(4, accessTokenExpiresAt);
+            preparedStatement.setString(5, accessTokenType);
+            preparedStatement.setString(6, accessTokenValue);
+            preparedStatement.setString(7, refreshTokenValue);
+            preparedStatement.setTimestamp(8, refreshTokenIssuedAt);
+            preparedStatement.setTimestamp(9, refreshTokenExpiresAt);
+            preparedStatement.execute();
+        }
+    }
+
+    private static <T> T withConnection(SqlFunction<T> action) {
+        Connection conn = null;
+        try {
+            conn = getConnection();
+            return action.apply(conn);
+        } catch (SQLException | JsonProcessingException e) {
+            throw new RuntimeException(e);
+        } finally {
+            closeIfPooled(conn);
+        }
+    }
+
+    private static void withConnectionVoid(SqlConsumer action) {
+        withConnection(conn -> {
+            action.accept(conn);
+            return null;
+        });
+    }
+
+    private static void withTransaction(SqlConsumer action) {
+        Connection conn = null;
+        boolean previousAutoCommit = true;
+        try {
+            conn = getConnection();
+            previousAutoCommit = conn.getAutoCommit();
+            conn.setAutoCommit(false);
+            try {
+                action.accept(conn);
+                conn.commit();
+            } catch (SQLException | JsonProcessingException | RuntimeException e) {
+                try {
+                    conn.rollback();
+                } catch (SQLException rollbackEx) {
+                    log.warn("Failed to rollback transaction", rollbackEx);
+                }
+                if (e instanceof RuntimeException runtimeException) {
+                    throw runtimeException;
+                }
+                throw new RuntimeException(e);
+            } finally {
+                try {
+                    conn.setAutoCommit(previousAutoCommit);
+                } catch (SQLException e) {
+                    log.warn("Failed to restore auto-commit", e);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } finally {
+            closeIfPooled(conn);
+        }
+    }
+
     private static Connection getConnection() throws SQLException {
         if (RegisteredClientJDBC.hikariDataSource != null) {
             return RegisteredClientJDBC.hikariDataSource.getConnection();
         }
-
         return RegisteredClientJDBC.connection;
+    }
+
+    private static void closeIfPooled(Connection conn) {
+        if (conn != null && RegisteredClientJDBC.hikariDataSource != null) {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                log.debug("Failed to close pooled connection", e);
+            }
+        }
     }
 
     private static TokenSettings readTokenSettings(String tokenSettingsJson) throws JsonProcessingException {
         if (tokenSettingsJson == null || tokenSettingsJson.isBlank()) {
             return null;
         }
-
-        ObjectMapper mapper = createTokenSettingsMapper();
-        return mapper.readValue(tokenSettingsJson, TokenSettings.class);
+        return TOKEN_SETTINGS_MAPPER.readValue(tokenSettingsJson, TokenSettings.class);
     }
 
     private static void writeTokenSettings(PreparedStatement preparedStatement, int index, TokenSettings tokenSettings)
@@ -418,9 +378,7 @@ public class RegisteredClientJDBC {
             preparedStatement.setNull(index, Types.VARCHAR);
             return;
         }
-
-        ObjectMapper mapper = createTokenSettingsMapper();
-        preparedStatement.setString(index, mapper.writeValueAsString(tokenSettings));
+        preparedStatement.setString(index, TOKEN_SETTINGS_MAPPER.writeValueAsString(tokenSettings));
     }
 
     private static ObjectMapper createTokenSettingsMapper() {

@@ -39,8 +39,9 @@ public class SecurityFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String token = this.recoverToken(request);
-        if(token != null) {
-            String subject = ApplicationContext.getBean(ProviderJwt.class, new ProviderJwt()).checkToken(token);
+        if (token != null) {
+            ProviderJwt providerJwt = ApplicationContext.getBean(ProviderJwt.class);
+            String subject = providerJwt != null ? providerJwt.checkToken(token) : null;
 
             if (subject != null) {
                 UserDetails userDetails = userRepository.findById(subject);

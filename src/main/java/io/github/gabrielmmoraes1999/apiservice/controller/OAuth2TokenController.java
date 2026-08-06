@@ -8,7 +8,7 @@ import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
 import io.github.gabrielmmoraes1999.apiservice.http.HttpStatus;
 import io.github.gabrielmmoraes1999.apiservice.http.ResponseEntity;
 import io.github.gabrielmmoraes1999.apiservice.security.crypto.PasswordEncoder;
-import io.github.gabrielmmoraes1999.apiservice.security.crypto.md5.Md5PasswordEncoder;
+import io.github.gabrielmmoraes1999.apiservice.security.crypto.bcrypt.BCryptPasswordEncoder;
 import io.github.gabrielmmoraes1999.apiservice.security.jwt.ProviderJwt;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.OAuth2Authorization;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.OpaqueTokenGenerator;
@@ -19,6 +19,7 @@ import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClientJ
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.TokenSettings;
 import io.github.gabrielmmoraes1999.apiservice.utils.Message;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
@@ -54,7 +55,7 @@ public class OAuth2TokenController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED, Message.error("Invalid credentials"));
         }
 
-        return buildTokenResponse(registeredClient);
+        return buildTokenResponse(registeredClient, null);
     }
 
     private ResponseEntity<?> refreshToken(String authHeader, String refreshToken, String clientIdParam) {
@@ -101,8 +102,7 @@ public class OAuth2TokenController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED, Message.error("Invalid credentials"));
         }
 
-        RegisteredClientJDBC.invalidateRefreshToken(refreshToken);
-        return buildTokenResponse(registeredClient);
+        return buildTokenResponse(registeredClient, refreshToken);
     }
 
     private RegisteredClient authenticateWithClientSecret(String authHeader) {
@@ -112,7 +112,7 @@ public class OAuth2TokenController {
 
         try {
             String base64Credentials = authHeader.substring("Basic ".length());
-            String credentials = new String(Base64.getDecoder().decode(base64Credentials));
+            String credentials = new String(Base64.getDecoder().decode(base64Credentials), StandardCharsets.UTF_8);
             String[] usernameAndPassword = credentials.split(":", 2);
 
             if (usernameAndPassword.length != 2) {
@@ -124,7 +124,7 @@ public class OAuth2TokenController {
                 return null;
             }
 
-            boolean matches = ApplicationContext.getBean(PasswordEncoder.class, new Md5PasswordEncoder())
+            boolean matches = ApplicationContext.getBean(PasswordEncoder.class, new BCryptPasswordEncoder())
                     .matches(usernameAndPassword[1], registeredClient.getClientSecret());
 
             return matches ? registeredClient : null;
@@ -133,7 +133,7 @@ public class OAuth2TokenController {
         }
     }
 
-    private ResponseEntity<?> buildTokenResponse(RegisteredClient registeredClient) {
+    private ResponseEntity<?> buildTokenResponse(RegisteredClient registeredClient, String oldRefreshToken) {
         Instant now = Instant.now();
         TokenSettings tokenSettings = registeredClient.getTokenSettings();
         Duration accessTokenTimeToLive = tokenSettings.getAccessTokenTimeToLive();
@@ -141,7 +141,12 @@ public class OAuth2TokenController {
         RefreshTokenAuthenticationMethod refreshTokenAuthenticationMethod =
                 tokenSettings.getRefreshTokenAuthenticationMethod();
 
-        ProviderJwt providerJwt = ApplicationContext.getBean(ProviderJwt.class, new ProviderJwt());
+        ProviderJwt providerJwt = ApplicationContext.getBean(ProviderJwt.class);
+        if (providerJwt == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR,
+                    Message.error("ProviderJwt bean is required"));
+        }
+
         String accessToken = providerJwt.generateToken(registeredClient.getId(), accessTokenTimeToLive.getSeconds());
 
         String refreshTokenValue = null;
@@ -167,17 +172,35 @@ public class OAuth2TokenController {
             refreshTokenExpiresAt = Timestamp.from(now.plusSeconds(refreshTokenTimeToLive.getSeconds()));
         }
 
-        RegisteredClientJDBC.saveToken(
-                registeredClient.getId(),
-                registeredClient.getClientId(),
-                Timestamp.from(now),
-                Timestamp.from(now.plusSeconds(accessTokenTimeToLive.getSeconds())),
-                "Bearer",
-                accessToken,
-                refreshTokenValue,
-                refreshTokenIssuedAt,
-                refreshTokenExpiresAt
-        );
+        Timestamp accessTokenIssuedAt = Timestamp.from(now);
+        Timestamp accessTokenExpiresAt = Timestamp.from(now.plusSeconds(accessTokenTimeToLive.getSeconds()));
+
+        if (oldRefreshToken != null) {
+            RegisteredClientJDBC.rotateRefreshToken(
+                    oldRefreshToken,
+                    registeredClient.getId(),
+                    registeredClient.getClientId(),
+                    accessTokenIssuedAt,
+                    accessTokenExpiresAt,
+                    "Bearer",
+                    accessToken,
+                    refreshTokenValue,
+                    refreshTokenIssuedAt,
+                    refreshTokenExpiresAt
+            );
+        } else {
+            RegisteredClientJDBC.saveToken(
+                    registeredClient.getId(),
+                    registeredClient.getClientId(),
+                    accessTokenIssuedAt,
+                    accessTokenExpiresAt,
+                    "Bearer",
+                    accessToken,
+                    refreshTokenValue,
+                    refreshTokenIssuedAt,
+                    refreshTokenExpiresAt
+            );
+        }
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("access_token", accessToken);

@@ -4,7 +4,7 @@ import io.github.gabrielmmoraes1999.apiservice.json.JSONObject;
 
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Collections;
+import java.time.Instant;
 
 public class Message {
 
@@ -20,7 +20,11 @@ public class Message {
     }
 
     public static JSONObject error(String message) {
-        return new JSONObject(Collections.singletonMap("error", message));
+        JSONObject json = new JSONObject();
+        json.put("error", message);
+        json.put("message", message);
+        json.put("timestamp", Instant.now().toString());
+        return json;
     }
 
 }

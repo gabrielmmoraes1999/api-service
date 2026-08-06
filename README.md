@@ -1,21 +1,78 @@
-# api-service [![MIT License](https://img.shields.io/github/license/gabrielmmoraes1999/api-service.svg) ](https://github.com/gabrielmmoraes1999/api-service/blob/main/LICENSE) [![Maven Central](https://img.shields.io/maven-central/v/io.github.gabrielmmoraes1999/api-service.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.gabrielmmoraes1999/DBRepository)
-Biblioteca Java para criação de api.
+# api-service [![MIT License](https://img.shields.io/github/license/gabrielmmoraes1999/api-service.svg)](https://github.com/gabrielmmoraes1999/api-service/blob/main/LICENSE) [![Maven Central](https://img.shields.io/maven-central/v/io.github.gabrielmmoraes1999/api-service.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.gabrielmmoraes1999/api-service)
 
-Importação da biblioteca:
-- Maven :
+Biblioteca Java 21 para criação de APIs REST (Jetty + anotações estilo Spring, OAuth2/JWT, WebSocket).
+
+## Instalação
+
+Maven:
+
 ```xml
 <dependency>
     <groupId>io.github.gabrielmmoraes1999</groupId>
     <artifactId>api-service</artifactId>
-    <version>3.1.0</version>
+    <version>3.2.0</version>
 </dependency>
 ```
 
-Veja a Wiki https://github.com/gabrielmmoraes1999/api-service/wiki, para ter um Tutorial Completo.
+## Quickstart
+
+```java
+import io.github.gabrielmmoraes1999.apiservice.ApplicationServer;
+import io.github.gabrielmmoraes1999.apiservice.annotation.*;
+
+@RestController
+@RequestMapping("/api")
+public class HelloController {
+    @GetMapping("/hello")
+    public String hello() {
+        return "ok";
+    }
+}
+
+public class App {
+    public static void main(String[] args) throws Exception {
+        ApplicationServer.run(App.class, 8080);
+    }
+}
+```
+
+Tutorial completo: [Wiki](https://github.com/gabrielmmoraes1999/api-service/wiki)
+
+Schema OAuth2: [`sql/sqlite3.sql`](sql/sqlite3.sql), [`sql/firebird.sql`](sql/firebird.sql)
+
+## Segurança (obrigatório em produção)
+
+- **JWT**: registre um `@Component` que estende `ProviderJwt` (ex.: RSA) **ou** um bean `new ProviderJwt("seu-segredo")`. Não há secret padrão.
+- **PasswordEncoder**: o padrão é `BCryptPasswordEncoder`. `Md5PasswordEncoder` está deprecated.
+- Erros HTTP 500 **não** incluem stack trace; configure SLF4J no aplicativo consumidor para logs.
+- Use HTTPS (`SslProperties`) e secrets via ambiente/keystore — nunca hardcode senhas.
+
+Exemplo mínimo de JWT HMAC:
+
+```java
+@Component
+public class JwtConfig extends ProviderJwt {
+    public JwtConfig() {
+        super(System.getenv().getOrDefault("JWT_SECRET", "change-me-in-production"), "my-api");
+    }
+}
+```
+
+> O código em `src/test/java/.../service` é uma **aplicação de demonstração**, não a suíte de testes. Os testes unitários ficam em `src/test/java/.../apiservice`.
 
 ________________________________________________________________________________________________
 
 # Histórico de Versões
+
+## v3.2.0 - 05/08/2026
+- Segurança: removido secret JWT padrão; `ProviderJwt` exige configuração explícita.
+- Segurança: `BCryptPasswordEncoder` como padrão OAuth2; `Md5PasswordEncoder` deprecated.
+- Segurança: respostas 500 sem stack trace; logging via SLF4J.
+- Segurança: `SecurityContextHolder.clearContext()` ao final da cadeia de filtros.
+- Segurança: UTF-8 e comparação constant-time em Basic Auth / MD5.
+- Robustez: refatoração de `RegisteredClientJDBC` + rotação de refresh token em transação.
+- Robustez: `ConcurrentHashMap` no `ApplicationContext`; `DateTimeFormatter` no lugar de `SimpleDateFormat`.
+- Build: removido `nimbus-jose-jwt`; Surefire + JUnit 5; CI GitHub Actions.
 
 ## v3.1.0 - 17/07/2026
 - Adicionado suporte opcional a `refresh_token` no endpoint OAuth2 (`grant_type=refresh_token`), configurável via `TokenSettings`.
