@@ -7,11 +7,18 @@ public class OAuth2Authorization {
     private final String registeredClientId;
     private final String principalName;
     private final Timestamp refreshTokenExpiresAt;
+    private final String deviceUuid;
 
-    public OAuth2Authorization(String registeredClientId, String principalName, Timestamp refreshTokenExpiresAt) {
+    public OAuth2Authorization(
+            String registeredClientId,
+            String principalName,
+            Timestamp refreshTokenExpiresAt,
+            String deviceUuid
+    ) {
         this.registeredClientId = registeredClientId;
         this.principalName = principalName;
         this.refreshTokenExpiresAt = refreshTokenExpiresAt;
+        this.deviceUuid = deviceUuid;
     }
 
     public String getRegisteredClientId() {
@@ -24,6 +31,10 @@ public class OAuth2Authorization {
 
     public Timestamp getRefreshTokenExpiresAt() {
         return refreshTokenExpiresAt;
+    }
+
+    public String getDeviceUuid() {
+        return deviceUuid;
     }
 
 }

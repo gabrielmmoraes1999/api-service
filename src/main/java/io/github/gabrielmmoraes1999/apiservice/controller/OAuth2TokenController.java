@@ -67,7 +67,7 @@ public class OAuth2TokenController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED, Message.error("Invalid credentials"));
         }
 
-        return buildTokenResponse(registeredClient, null, grantType, remoteAddress, parameters);
+        return buildTokenResponse(registeredClient, null, grantType, remoteAddress, parameters, null);
     }
 
     private ResponseEntity<?> refreshToken(
@@ -121,7 +121,14 @@ public class OAuth2TokenController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED, Message.error("Invalid credentials"));
         }
 
-        return buildTokenResponse(registeredClient, refreshToken, grantType, remoteAddress, parameters);
+        return buildTokenResponse(
+                registeredClient,
+                refreshToken,
+                grantType,
+                remoteAddress,
+                parameters,
+                authorization.getDeviceUuid()
+        );
     }
 
     private RegisteredClient authenticateWithClientSecret(String authHeader) {
@@ -157,7 +164,8 @@ public class OAuth2TokenController {
             String oldRefreshToken,
             String grantType,
             String remoteAddress,
-            Map<String, String> parameters
+            Map<String, String> parameters,
+            String fallbackDeviceUuid
     ) {
         Instant now = Instant.now();
         TokenSettings tokenSettings = registeredClient.getTokenSettings();
@@ -165,6 +173,7 @@ public class OAuth2TokenController {
         Duration refreshTokenTimeToLive = tokenSettings.getRefreshTokenTimeToLive();
         RefreshTokenAuthenticationMethod refreshTokenAuthenticationMethod =
                 tokenSettings.getRefreshTokenAuthenticationMethod();
+        String deviceUuid = resolveDeviceUuid(parameters, fallbackDeviceUuid);
 
         ProviderJwt providerJwt = ApplicationContext.getBean(ProviderJwt.class);
         if (providerJwt == null) {
@@ -211,7 +220,8 @@ public class OAuth2TokenController {
                     accessToken,
                     refreshTokenValue,
                     refreshTokenIssuedAt,
-                    refreshTokenExpiresAt
+                    refreshTokenExpiresAt,
+                    deviceUuid
             );
         } else {
             RegisteredClientJDBC.saveToken(
@@ -223,7 +233,8 @@ public class OAuth2TokenController {
                     accessToken,
                     refreshTokenValue,
                     refreshTokenIssuedAt,
-                    refreshTokenExpiresAt
+                    refreshTokenExpiresAt,
+                    deviceUuid
             );
         }
 
@@ -256,6 +267,19 @@ public class OAuth2TokenController {
                 parameters,
                 tokenResponse
         ));
+    }
+
+    private static String resolveDeviceUuid(Map<String, String> parameters, String fallbackDeviceUuid) {
+        if (parameters != null) {
+            String deviceUuid = parameters.get("device_uuid");
+            if (deviceUuid != null && !deviceUuid.isBlank()) {
+                return deviceUuid.trim();
+            }
+        }
+        if (fallbackDeviceUuid != null && !fallbackDeviceUuid.isBlank()) {
+            return fallbackDeviceUuid.trim();
+        }
+        return null;
     }
 
     private static String resolveGrantType(String grantType) {

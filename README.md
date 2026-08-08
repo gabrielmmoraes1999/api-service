@@ -10,7 +10,7 @@ Maven:
 <dependency>
     <groupId>io.github.gabrielmmoraes1999</groupId>
     <artifactId>api-service</artifactId>
-    <version>3.2.0</version>
+    <version>3.3.0</version>
 </dependency>
 ```
 
@@ -63,6 +63,11 @@ public class JwtConfig extends ProviderJwt {
 ________________________________________________________________________________________________
 
 # Histórico de Versões
+
+## v3.3.0 - 08/08/2026
+- OAuth2: `OAuth2TokenEvents.addSuccessListener(...)` (estilo `addListener`) dispara após login/refresh com sucesso; contexto com parâmetros do body, resposta do token e IP (`getRemoteAddress()`).
+- OAuth2: parâmetro opcional `device_uuid` no `POST /oauth2/token`, persistido em `oauth2_authorization.DEVICE_UUID` (SQLite/Firebird); no refresh, reutiliza o valor anterior se o body não enviar.
+- OAuth2: `RegisteredClientJDBC.deleteOAuth2AuthorizationByDeviceUuid(deviceUuid)` para revogar autorizações por dispositivo.
 
 ## v3.2.0 - 05/08/2026
 - Segurança: removido secret JWT padrão; `ProviderJwt` exige configuração explícita.
