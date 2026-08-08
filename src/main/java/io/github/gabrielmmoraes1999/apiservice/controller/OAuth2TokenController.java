@@ -11,6 +11,8 @@ import io.github.gabrielmmoraes1999.apiservice.security.crypto.PasswordEncoder;
 import io.github.gabrielmmoraes1999.apiservice.security.crypto.bcrypt.BCryptPasswordEncoder;
 import io.github.gabrielmmoraes1999.apiservice.security.jwt.ProviderJwt;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.OAuth2Authorization;
+import io.github.gabrielmmoraes1999.apiservice.security.oauth2.OAuth2TokenEvents;
+import io.github.gabrielmmoraes1999.apiservice.security.oauth2.OAuth2TokenSuccessContext;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.OpaqueTokenGenerator;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RefreshTokenAuthenticationMethod;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RefreshTokenFormat;
@@ -18,6 +20,7 @@ import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClient;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.RegisteredClientJDBC;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.TokenSettings;
 import io.github.gabrielmmoraes1999.apiservice.utils.Message;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
@@ -36,29 +39,45 @@ public class OAuth2TokenController {
             @RequestHeader(value = "Authorization", required = false) String authHeader,
             @RequestParam("grant_type") String grantType,
             @RequestParam("refresh_token") String refreshToken,
-            @RequestParam("client_id") String clientId
+            @RequestParam("client_id") String clientId,
+            HttpServletRequest request
     ) {
+        Map<String, String> parameters = toParameterMap(request);
+        String remoteAddress = resolveRemoteAddress(request);
+
         if (grantType == null || grantType.isBlank() || "client_credentials".equals(grantType)) {
-            return issueToken(authHeader);
+            return issueToken(authHeader, resolveGrantType(grantType), remoteAddress, parameters);
         }
 
         if ("refresh_token".equals(grantType)) {
-            return refreshToken(authHeader, refreshToken, clientId);
+            return refreshToken(authHeader, refreshToken, clientId, grantType, remoteAddress, parameters);
         }
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST, Message.error("Unsupported grant_type"));
     }
 
-    private ResponseEntity<?> issueToken(String authHeader) {
+    private ResponseEntity<?> issueToken(
+            String authHeader,
+            String grantType,
+            String remoteAddress,
+            Map<String, String> parameters
+    ) {
         RegisteredClient registeredClient = authenticateWithClientSecret(authHeader);
         if (registeredClient == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED, Message.error("Invalid credentials"));
         }
 
-        return buildTokenResponse(registeredClient, null);
+        return buildTokenResponse(registeredClient, null, grantType, remoteAddress, parameters);
     }
 
-    private ResponseEntity<?> refreshToken(String authHeader, String refreshToken, String clientIdParam) {
+    private ResponseEntity<?> refreshToken(
+            String authHeader,
+            String refreshToken,
+            String clientIdParam,
+            String grantType,
+            String remoteAddress,
+            Map<String, String> parameters
+    ) {
         if (refreshToken == null || refreshToken.isBlank()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST, Message.error("Missing refresh_token"));
         }
@@ -102,7 +121,7 @@ public class OAuth2TokenController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED, Message.error("Invalid credentials"));
         }
 
-        return buildTokenResponse(registeredClient, refreshToken);
+        return buildTokenResponse(registeredClient, refreshToken, grantType, remoteAddress, parameters);
     }
 
     private RegisteredClient authenticateWithClientSecret(String authHeader) {
@@ -133,7 +152,13 @@ public class OAuth2TokenController {
         }
     }
 
-    private ResponseEntity<?> buildTokenResponse(RegisteredClient registeredClient, String oldRefreshToken) {
+    private ResponseEntity<?> buildTokenResponse(
+            RegisteredClient registeredClient,
+            String oldRefreshToken,
+            String grantType,
+            String remoteAddress,
+            Map<String, String> parameters
+    ) {
         Instant now = Instant.now();
         TokenSettings tokenSettings = registeredClient.getTokenSettings();
         Duration accessTokenTimeToLive = tokenSettings.getAccessTokenTimeToLive();
@@ -212,7 +237,65 @@ public class OAuth2TokenController {
             response.put("refresh_expires_in", refreshTokenTimeToLive.getSeconds());
         }
 
+        notifyTokenSuccess(registeredClient, grantType, remoteAddress, parameters, response);
+
         return ResponseEntity.ok(response);
+    }
+
+    private void notifyTokenSuccess(
+            RegisteredClient registeredClient,
+            String grantType,
+            String remoteAddress,
+            Map<String, String> parameters,
+            Map<String, Object> tokenResponse
+    ) {
+        OAuth2TokenEvents.fireSuccess(new OAuth2TokenSuccessContext(
+                registeredClient,
+                grantType,
+                remoteAddress,
+                parameters,
+                tokenResponse
+        ));
+    }
+
+    private static String resolveGrantType(String grantType) {
+        if (grantType == null || grantType.isBlank()) {
+            return "client_credentials";
+        }
+        return grantType;
+    }
+
+    private static String resolveRemoteAddress(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            int comma = forwardedFor.indexOf(',');
+            return (comma >= 0 ? forwardedFor.substring(0, comma) : forwardedFor).trim();
+        }
+
+        String realIp = request.getHeader("X-Real-IP");
+        if (realIp != null && !realIp.isBlank()) {
+            return realIp.trim();
+        }
+
+        return request.getRemoteAddr();
+    }
+
+    private static Map<String, String> toParameterMap(HttpServletRequest request) {
+        Map<String, String> parameters = new LinkedHashMap<>();
+        if (request == null) {
+            return parameters;
+        }
+
+        Map<String, String[]> raw = request.getParameterMap();
+        for (Map.Entry<String, String[]> entry : raw.entrySet()) {
+            String[] values = entry.getValue();
+            parameters.put(entry.getKey(), values != null && values.length > 0 ? values[0] : null);
+        }
+        return parameters;
     }
 
 }
