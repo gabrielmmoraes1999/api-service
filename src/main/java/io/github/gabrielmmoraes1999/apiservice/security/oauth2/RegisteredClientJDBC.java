@@ -139,6 +139,16 @@ public class RegisteredClientJDBC {
         });
     }
 
+    public static void deleteOAuth2AuthorizationByDeviceUuid(String deviceUuid) {
+        withConnectionVoid(conn -> {
+            try (PreparedStatement preparedStatement = conn.prepareStatement(
+                    "delete from oauth2_authorization where device_uuid = ?")) {
+                preparedStatement.setString(1, deviceUuid);
+                preparedStatement.execute();
+            }
+        });
+    }
+
     public static void saveToken(
             String registeredClientId,
             String principalName,
@@ -156,6 +166,7 @@ public class RegisteredClientJDBC {
                 accessTokenValue,
                 null,
                 null,
+                null,
                 null
         );
     }
@@ -171,6 +182,32 @@ public class RegisteredClientJDBC {
             Timestamp refreshTokenIssuedAt,
             Timestamp refreshTokenExpiresAt
     ) {
+        saveToken(
+                registeredClientId,
+                principalName,
+                accessTokenIssuedAt,
+                accessTokenExpiresAt,
+                accessTokenType,
+                accessTokenValue,
+                refreshTokenValue,
+                refreshTokenIssuedAt,
+                refreshTokenExpiresAt,
+                null
+        );
+    }
+
+    public static void saveToken(
+            String registeredClientId,
+            String principalName,
+            Timestamp accessTokenIssuedAt,
+            Timestamp accessTokenExpiresAt,
+            String accessTokenType,
+            String accessTokenValue,
+            String refreshTokenValue,
+            Timestamp refreshTokenIssuedAt,
+            Timestamp refreshTokenExpiresAt,
+            String deviceUuid
+    ) {
         withConnectionVoid(conn -> insertToken(
                 conn,
                 registeredClientId,
@@ -181,7 +218,8 @@ public class RegisteredClientJDBC {
                 accessTokenValue,
                 refreshTokenValue,
                 refreshTokenIssuedAt,
-                refreshTokenExpiresAt
+                refreshTokenExpiresAt,
+                deviceUuid
         ));
     }
 
@@ -198,7 +236,8 @@ public class RegisteredClientJDBC {
             String accessTokenValue,
             String refreshTokenValue,
             Timestamp refreshTokenIssuedAt,
-            Timestamp refreshTokenExpiresAt
+            Timestamp refreshTokenExpiresAt,
+            String deviceUuid
     ) {
         withTransaction(conn -> {
             try (PreparedStatement invalidate = conn.prepareStatement(
@@ -216,7 +255,8 @@ public class RegisteredClientJDBC {
                     accessTokenValue,
                     refreshTokenValue,
                     refreshTokenIssuedAt,
-                    refreshTokenExpiresAt
+                    refreshTokenExpiresAt,
+                    deviceUuid
             );
         });
     }
@@ -224,14 +264,15 @@ public class RegisteredClientJDBC {
     public static OAuth2Authorization findAuthorizationByRefreshToken(String refreshToken) {
         return withConnection(conn -> {
             try (PreparedStatement preparedStatement = conn.prepareStatement(
-                    "select registered_client_id, principal_name, refresh_token_expires_at from oauth2_authorization where refresh_token_value = ?")) {
+                    "select registered_client_id, principal_name, refresh_token_expires_at, device_uuid from oauth2_authorization where refresh_token_value = ?")) {
                 preparedStatement.setString(1, refreshToken);
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
                     if (resultSet.next()) {
                         return new OAuth2Authorization(
                                 resultSet.getString("registered_client_id"),
                                 resultSet.getString("principal_name"),
-                                resultSet.getTimestamp("refresh_token_expires_at")
+                                resultSet.getTimestamp("refresh_token_expires_at"),
+                                resultSet.getString("device_uuid")
                         );
                     }
                 }
@@ -278,10 +319,11 @@ public class RegisteredClientJDBC {
             String accessTokenValue,
             String refreshTokenValue,
             Timestamp refreshTokenIssuedAt,
-            Timestamp refreshTokenExpiresAt
+            Timestamp refreshTokenExpiresAt,
+            String deviceUuid
     ) throws SQLException {
         try (PreparedStatement preparedStatement = conn.prepareStatement(
-                "insert into oauth2_authorization (registered_client_id, principal_name, access_token_issued_at, access_token_expires_at, access_token_type, access_token_value, refresh_token_value, refresh_token_issued_at, refresh_token_expires_at) values (?,?,?,?,?,?,?,?,?)")) {
+                "insert into oauth2_authorization (registered_client_id, principal_name, access_token_issued_at, access_token_expires_at, access_token_type, access_token_value, refresh_token_value, refresh_token_issued_at, refresh_token_expires_at, device_uuid) values (?,?,?,?,?,?,?,?,?,?)")) {
             preparedStatement.setString(1, registeredClientId);
             preparedStatement.setString(2, principalName);
             preparedStatement.setTimestamp(3, accessTokenIssuedAt);
@@ -291,6 +333,11 @@ public class RegisteredClientJDBC {
             preparedStatement.setString(7, refreshTokenValue);
             preparedStatement.setTimestamp(8, refreshTokenIssuedAt);
             preparedStatement.setTimestamp(9, refreshTokenExpiresAt);
+            if (deviceUuid == null || deviceUuid.isBlank()) {
+                preparedStatement.setNull(10, Types.VARCHAR);
+            } else {
+                preparedStatement.setString(10, deviceUuid);
+            }
             preparedStatement.execute();
         }
     }
