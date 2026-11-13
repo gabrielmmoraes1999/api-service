@@ -127,6 +127,11 @@ public class JSONObject {
     static final Pattern NUMBER_PATTERN = Pattern.compile("-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+-]?\\d+)?");
 
     /**
+     * Maximum characters accepted in one numeric token before it is rejected.
+     */
+    static final int MAX_NUMBER_LENGTH = 512;
+
+    /**
      * The map where the JSONObject's properties are kept.
      */
     private final Map<String, Object> map;
@@ -2516,6 +2521,8 @@ public class JSONObject {
         if ((initial >= '0' && initial <= '9') || initial == '-') {
             try {
                 return stringToNumber(string);
+            } catch (JSONException rejected) {
+                throw rejected;
             } catch (Exception ignore) {
             }
         }
@@ -2531,8 +2538,12 @@ public class JSONObject {
      * @return Number representation of the value.
      * @throws NumberFormatException thrown if the value is not a valid number. A public
      *      caller should catch this and wrap it in a {@link JSONException} if applicable.
+     * @throws JSONException if {@code val} is longer than {@link #MAX_NUMBER_LENGTH}.
      */
     protected static Number stringToNumber(final String val) throws NumberFormatException {
+        if (val.length() > MAX_NUMBER_LENGTH) {
+            throw new JSONException("Numeric token exceeds maximum length of " + MAX_NUMBER_LENGTH);
+        }
         char initial = val.charAt(0);
         if ((initial >= '0' && initial <= '9') || initial == '-') {
             // decimal representation

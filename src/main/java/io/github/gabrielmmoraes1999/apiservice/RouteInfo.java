@@ -3,7 +3,6 @@ package io.github.gabrielmmoraes1999.apiservice;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class RouteInfo {
@@ -38,20 +37,7 @@ public class RouteInfo {
 
     public static RouteInfo createRouteInfo(Method method, Object controllerInstance, String fullPath) {
         List<String> pathVariableNames = new ArrayList<>();
-        String regex = "\\{([^/}]+)}";
-
-        Matcher matcher = Pattern.compile(regex).matcher(fullPath);
-        StringBuffer patternBuffer = new StringBuffer();
-
-        while (matcher.find()) {
-            String varName = matcher.group(1);
-            pathVariableNames.add(varName);
-            matcher.appendReplacement(patternBuffer, "([^/]+)");
-        }
-
-        matcher.appendTail(patternBuffer);
-
-        Pattern pathPattern = Pattern.compile("^" + patternBuffer + "$");
+        Pattern pathPattern = AntPatterns.compileRoute(fullPath, pathVariableNames);
         return new RouteInfo(method, controllerInstance, pathPattern, pathVariableNames);
     }
 }

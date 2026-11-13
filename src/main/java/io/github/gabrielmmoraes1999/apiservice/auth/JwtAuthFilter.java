@@ -49,16 +49,13 @@ public class JwtAuthFilter implements Filter {
                 return;
             }
 
-            List<SecurityRule> ruleList = SecurityFilterChain.getListRule(path, method, SecurityRule.AccessType.HAS_ROLE);
+            List<SecurityRule> roleRules = SecurityFilterChain.getListRule(path, method, SecurityRule.AccessType.HAS_ROLE);
+            boolean authenticated = SecurityFilterChain.getRule(path, method, SecurityRule.AccessType.AUTHENTICATED).isPresent();
 
-            if (ruleList.isEmpty()) {
+            if (roleRules.isEmpty() && !authenticated) {
                 Message.error(response, HttpServletResponse.SC_FORBIDDEN, "Acesso negado");
                 return;
             }
-
-            List<String> accessTypeList = ruleList.stream()
-                    .flatMap(rule -> rule.getRoles().stream())
-                    .collect(Collectors.toList());
 
             String token = recoverToken(request);
             if (token == null) {
@@ -92,13 +89,19 @@ public class JwtAuthFilter implements Filter {
                 return;
             }
 
-            boolean hasRole = userDetails.getAuthorities().stream()
-                    .map(GrantedAuthority::getAuthority)
-                    .anyMatch(accessTypeList::contains);
+            if (!roleRules.isEmpty()) {
+                List<String> accessTypeList = roleRules.stream()
+                        .flatMap(rule -> rule.getRoles().stream())
+                        .collect(Collectors.toList());
 
-            if (!hasRole) {
-                Message.error(response, HttpServletResponse.SC_FORBIDDEN, "Permission denied");
-                return;
+                boolean hasRole = userDetails.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .anyMatch(accessTypeList::contains);
+
+                if (!hasRole) {
+                    Message.error(response, HttpServletResponse.SC_FORBIDDEN, "Permission denied");
+                    return;
+                }
             }
 
             request.setAttribute("userDetails", userDetails);
