@@ -6,7 +6,7 @@
 
     <groupId>io.github.gabrielmmoraes1999</groupId>
     <artifactId>api-service</artifactId>
-    <version>3.3.0</version>
+    <version>3.3.1</version>
 
     <name>ApiService</name>
     <description>Create api request.</description>
@@ -122,7 +122,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.6.1</version>
+            <version>1.6.6</version>
             <scope>test</scope>
         </dependency>
         <dependency>

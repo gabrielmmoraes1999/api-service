@@ -10,7 +10,7 @@ Maven:
 <dependency>
     <groupId>io.github.gabrielmmoraes1999</groupId>
     <artifactId>api-service</artifactId>
-    <version>3.3.0</version>
+    <version>3.3.1</version>
 </dependency>
 ```
 
@@ -43,7 +43,12 @@ Schema OAuth2: [`sql/sqlite3.sql`](sql/sqlite3.sql), [`sql/firebird.sql`](sql/fi
 ## Segurança (obrigatório em produção)
 
 - **JWT**: registre um `@Component` que estende `ProviderJwt` (ex.: RSA) **ou** um bean `new ProviderJwt("seu-segredo")`. Não há secret padrão.
-- **PasswordEncoder**: o padrão é `BCryptPasswordEncoder`. `Md5PasswordEncoder` está deprecated.
+- **PasswordEncoder**: o padrão é `BCryptPasswordEncoder`. `Md5PasswordEncoder` está deprecated e não é usado pelo app de demonstração.
+- **IP do cliente**: `getRemoteAddress()` no evento OAuth2 usa só `request.getRemoteAddr()`. Headers `X-Forwarded-For` e `X-Real-IP` só entram se houver um bean `ClientIp.trustProxyHeaders()`. Sem esse bean, esses headers não são lidos.
+- **WebSocket (demo)**: o handshake em `/websocket/**` exige usuário autenticado com papel `ADMIN`. Se aceitar, o principal fica no attribute `principal` da sessão. Handshake anônimo não abre o socket.
+- **Paths**: regras de segurança e rotas usam padrão Ant. Texto literal é escapado, então `.` não é “qualquer caractere”. `**` = zero ou mais segmentos, `*` = dentro de um segmento (não atravessa `/`), `?` = um caractere (não atravessa `/`). Em rota, só `{variavel}` vira grupo.
+- **Autorização**: `anyRequest().authenticated()` é o catch-all `/**` e exige token JWT válido com usuário no `SecurityContextHolder`. Rota com papel continua exigindo esse papel. Path que não casa com nenhuma regra responde 403 quando existe `SecurityFilterChain`. Sem cadeia configurada, o filtro segue aberto.
+- **JSON**: token numérico com mais de 512 caracteres é rejeitado com `JSONException`, antes de virar `BigDecimal` ou `BigInteger`.
 - Erros HTTP 500 **não** incluem stack trace; configure SLF4J no aplicativo consumidor para logs.
 - Use HTTPS (`SslProperties`) e secrets via ambiente/keystore — nunca hardcode senhas.
 
@@ -63,6 +68,13 @@ public class JwtConfig extends ProviderJwt {
 ________________________________________________________________________________________________
 
 # Histórico de Versões
+
+## v3.3.1 - 13/11/2026
+- Segurança: padrões de path Ant com texto literal escapado em `SecurityRule` e nas rotas.
+- Segurança: `anyRequest().authenticated()` passa a exigir token válido e usuário autenticado.
+- Segurança: número JSON com mais de 512 caracteres é rejeitado.
+- Segurança: IP do cliente no OAuth2 usa só `getRemoteAddr()`, salvo bean explícito `ClientIp.trustProxyHeaders()`.
+- Segurança: handshake WebSocket do demo exige papel `ADMIN` e copia o principal para a sessão.
 
 ## v3.3.0 - 08/08/2026
 - OAuth2: `OAuth2TokenEvents.addSuccessListener(...)` (estilo `addListener`) dispara após login/refresh com sucesso; contexto com parâmetros do body, resposta do token e IP (`getRemoteAddress()`).

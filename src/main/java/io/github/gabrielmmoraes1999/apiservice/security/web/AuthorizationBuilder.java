@@ -9,6 +9,7 @@ import java.util.List;
 public class AuthorizationBuilder {
 
     private final List<SecurityRule> rules = new ArrayList<>();
+    private boolean anyRequest;
 
     public PathMatcher antMatchers(String pattern) {
         return new PathMatcher(pattern, null, this);
@@ -19,10 +20,15 @@ public class AuthorizationBuilder {
     }
 
     public AuthorizationBuilder anyRequest() {
+        this.anyRequest = true;
         return this;
     }
 
     public AuthorizationBuilder authenticated() {
+        if (anyRequest) {
+            addRule(new SecurityRule("*", "/**", SecurityRule.AccessType.AUTHENTICATED, List.of()));
+            anyRequest = false;
+        }
         return this;
     }
 

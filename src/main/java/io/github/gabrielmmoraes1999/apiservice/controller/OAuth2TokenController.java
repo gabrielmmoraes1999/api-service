@@ -5,6 +5,7 @@ import io.github.gabrielmmoraes1999.apiservice.annotation.RequestHeader;
 import io.github.gabrielmmoraes1999.apiservice.annotation.RequestParam;
 import io.github.gabrielmmoraes1999.apiservice.annotation.RestController;
 import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
+import io.github.gabrielmmoraes1999.apiservice.http.ClientIp;
 import io.github.gabrielmmoraes1999.apiservice.http.HttpStatus;
 import io.github.gabrielmmoraes1999.apiservice.http.ResponseEntity;
 import io.github.gabrielmmoraes1999.apiservice.security.crypto.PasswordEncoder;
@@ -290,22 +291,8 @@ public class OAuth2TokenController {
     }
 
     private static String resolveRemoteAddress(HttpServletRequest request) {
-        if (request == null) {
-            return null;
-        }
-
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            int comma = forwardedFor.indexOf(',');
-            return (comma >= 0 ? forwardedFor.substring(0, comma) : forwardedFor).trim();
-        }
-
-        String realIp = request.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isBlank()) {
-            return realIp.trim();
-        }
-
-        return request.getRemoteAddr();
+        ClientIp clientIp = ApplicationContext.getBean(ClientIp.class, ClientIp.remoteAddressOnly());
+        return clientIp.resolve(request);
     }
 
     private static Map<String, String> toParameterMap(HttpServletRequest request) {
