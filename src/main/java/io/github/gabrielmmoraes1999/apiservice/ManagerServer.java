@@ -4,6 +4,7 @@ import io.github.gabrielmmoraes1999.apiservice.annotation.*;
 import io.github.gabrielmmoraes1999.apiservice.auth.*;
 import io.github.gabrielmmoraes1999.apiservice.context.ApplicationContext;
 import io.github.gabrielmmoraes1999.apiservice.controller.OAuth2TokenController;
+import io.github.gabrielmmoraes1999.apiservice.http.ClientIp;
 import io.github.gabrielmmoraes1999.apiservice.security.crypto.PasswordEncoder;
 import io.github.gabrielmmoraes1999.apiservice.security.jwt.ProviderJwt;
 import io.github.gabrielmmoraes1999.apiservice.security.oauth2.TokenSettings;
@@ -135,6 +136,8 @@ public class ManagerServer extends Server {
                             context.addFilter(new FilterHolder((BasicAuthFilter) bean), "/*", null);
                         } else if (classReturn == TokenSettings.class) {
                             ApplicationContext.addBean(TokenSettings.class, method.invoke(configInstance));
+                        } else if (classReturn == ClientIp.class) {
+                            ApplicationContext.addBean(ClientIp.class, method.invoke(configInstance));
                         } else {
                             method.invoke(configInstance);
                         }
@@ -176,6 +179,8 @@ public class ManagerServer extends Server {
                             ApplicationContext.addBean(PasswordEncoder.class, method.invoke(configInstance));
                         } else if (classReturn == TokenSettings.class) {
                             ApplicationContext.addBean(TokenSettings.class, method.invoke(configInstance));
+                        } else if (classReturn == ClientIp.class) {
+                            ApplicationContext.addBean(ClientIp.class, method.invoke(configInstance));
                         } else if (classReturn == TimeZone.class) {
                             ConfigSerializer.setTimeZone((TimeZone) method.invoke(configInstance));
                         } else {
